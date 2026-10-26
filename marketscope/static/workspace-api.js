@@ -225,7 +225,7 @@ export function toBackendConfig(patch = {}) {
   return mapped;
 }
 
-const SUPPORTED_ROUTES = new Set(['/api/bootstrap', '/api/market', '/api/stock', '/api/health', '/api/admin', '/api/admin/audit-logs', '/api/config/history', '/api/config/preview', '/api/session/preview', '/api/config', '/api/backup/status', '/api/backup', '/api/ai/status', '/api/ai/pulse', '/api/ai/analyze', '/api/ai/chat', '/api/stocks/database', '/api/stocks/quote', '/api/stocks/track', '/api/stocks/untrack', '/api/market/schedule', '/api/signals/stats', '/api/session/summary', '/api/flow', '/api/login', '/api/logout', '/api/metrics']);
+const SUPPORTED_ROUTES = new Set(['/api/bootstrap', '/api/market', '/api/stock', '/api/historical/symbols', '/api/historical/candles', '/api/health', '/api/admin', '/api/admin/audit-logs', '/api/config/history', '/api/config/preview', '/api/session/preview', '/api/config', '/api/backup/status', '/api/backup', '/api/ai/status', '/api/ai/pulse', '/api/ai/analyze', '/api/ai/chat', '/api/stocks/database', '/api/stocks/quote', '/api/stocks/track', '/api/stocks/untrack', '/api/market/schedule', '/api/signals/stats', '/api/session/summary', '/api/flow', '/api/login', '/api/logout', '/api/metrics']);
 
 export function createWorkspaceAPI(getState = () => ({}), { fetchImpl = globalThis.fetch } = {}) {
   return async function request(path, { method = 'GET', body, signal } = {}) {
