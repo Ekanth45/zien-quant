@@ -7,7 +7,7 @@
 
 **Zien Quant** is a deterministic quantitative trading terminal and order block analysis workstation for Indian cash equities (National Stock Exchange - NSE). Built from the ground up on a **100% Python Standard Library backend** with zero third-party pip dependencies, it delivers deterministic technical order block detection, canvas-rendered intraday flow rivers, automated risk-to-reward gating, and optional local AI trade reasoning powered by Ollama. Data is sourced from Yahoo Finance chart candles; the terminal is a single-owner administrative system and does not rely on direct exchange feeds, Level 2/3 order flow, or institutional participant tracking.
 
-**Version 2.0.0** introduces a responsive workspace based on the frontend in `finance reff/outputs/marketscope/static/`. The homepage includes the market overview, stock scanner, watchlist, stock inspection, owner console, and Laya assistant. It uses this repository's real-data backend, with auto and previous-session views and explicit unavailable states. The Flow River remains available at `/flow`. See the [frontend version notes](docs/FRONTEND_V2.md).
+**Version 2.1.0** introduces verified previous close resolution, 1-minute candle matrix streaming with 5-second polling, canvas-rendered trajectory matrix fields, and explicit design preview labeling. The homepage provides the responsive workspace with market overview, stock scanner, watchlist, stock inspection, owner console, and Laya assistant. The Flow River remains available at `/flow`. See the [frontend version notes](docs/FRONTEND_V2.md).
 
 ---
 
@@ -233,7 +233,7 @@ Reference deployment manifests are provided under `marketscope/deploy/` (`Docker
 
 ## Testing
 
-Run the full automated test suite (139 tests) directly with Python's built-in test runner:
+Run the full automated test suite (142 tests) directly with Python's built-in test runner:
 
 ```bash
 python -m unittest discover -s tests

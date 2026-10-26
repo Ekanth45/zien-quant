@@ -1,6 +1,6 @@
 {
   "name": "zien-quant-frontend-tests",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "Development-only DOM and API contract tests; no frontend runtime dependencies.",

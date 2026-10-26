@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-26
+
+### Added
+- **Accurate previous close resolution**: Day % change resolves against real previous closes from Yahoo Finance and candle archive; returns explicit `unavailable` status when no previous close is recorded instead of inventing numbers.
+- **Dynamic matrix flow canvas**: Replaced static matrix placeholders with an active HTML5 2D canvas displaying real candle-derived trajectory swarms from `/api/flow`.
+- **Design preview notices**: Added prominent disclaimer banners to static HTML mockups (`Bloomberg`, `Mobile`, `Console`).
+- **Regression test suite**: Added `test_missing_prior_close.py` testing prior close precedence, unpriced breadth isolation, and archive fallbacks.
+
+### Changed
+- Flow and Matrix terminals upgraded to 1-minute default candle resolution with 5-second live polling.
+- Matrix terminal calculations now derive purely from verified candle metrics (RVOL, breadth, session moves from open).
+- Account link on flow terminal routes directly to home workspace `/`.
+
+### Fixed
+- Fixed matrix page JavaScript crash by handling null/undefined metric scores and unpriced stocks safely.
+
 ## [2.0.0] - 2026-10-26
 
 Development checks include Node DOM/API regression tests in CI. Trajectory gaps stay gaps, selected live candle history has a bounded refresh cache, and confirmed charts exclude open candles.
