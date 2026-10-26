@@ -194,13 +194,37 @@ class LayaAIEngine:
 
     def __init__(
         self,
-        ollama_host: str = OLLAMA_DEFAULT_HOST,
-        model: str = DEFAULT_MODEL,
-        timeout_sec: float = 35.0,
+        ollama_host: Optional[str] = None,
+        model: Optional[str] = None,
+        timeout_sec: Optional[float] = None,
     ) -> None:
-        self.ollama_host = ollama_host.rstrip("/")
-        self.model = model
-        self.timeout_sec = timeout_sec
+        if ollama_host is None:
+            raw_host = os.environ.get("OLLAMA_HOST") or OLLAMA_DEFAULT_HOST
+        else:
+            raw_host = ollama_host
+        if not raw_host.startswith("http://") and not raw_host.startswith("https://"):
+            raw_host = f"http://{raw_host}"
+        self.ollama_host = raw_host.rstrip("/")
+
+        if model is None:
+            self.model = os.environ.get("OLLAMA_MODEL") or DEFAULT_MODEL
+        else:
+            self.model = model
+
+        if timeout_sec is None:
+            env_timeout = os.environ.get("OLLAMA_TIMEOUT")
+            try:
+                self.timeout_sec = float(env_timeout) if env_timeout else 35.0
+            except (ValueError, TypeError):
+                self.timeout_sec = 35.0
+        else:
+            self.timeout_sec = timeout_sec
+
+        self.keep_alive = os.environ.get("OLLAMA_KEEP_ALIVE", "15m")
+        try:
+            self.context_length = int(os.environ.get("OLLAMA_CONTEXT_LENGTH", "4096"))
+        except (ValueError, TypeError):
+            self.context_length = 4096
         self._lock = threading.Lock()
         self._analysis_cache: Dict[str, Dict[str, Any]] = {}
         self._pulse_cache: Optional[Dict[str, Any]] = None

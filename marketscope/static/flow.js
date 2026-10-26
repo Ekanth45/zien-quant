@@ -321,7 +321,7 @@ function renderFeedDownState() {
   if (funnelBody) {
     funnelBody.innerHTML = `
       <div class="stage-empty-msg" style="grid-column: span 4; color: var(--pink-red);">
-        Exchange feed currently unavailable.<br/>
+        Market data feed currently unavailable.<br/>
         <button id="errLoadPrevBtn" class="nav-btn primary" style="margin-top: 10px;">Load Previous Session</button>
       </div>`;
     const btn = document.getElementById("errLoadPrevBtn");

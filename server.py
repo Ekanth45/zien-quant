@@ -21,10 +21,11 @@ spec.loader.exec_module(ms_server)
 run_server = ms_server.run_server
 
 import argparse
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MarketScope HTTP Server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address to bind")
-    parser.add_argument("--port", type=int, default=8765, help="Port to listen on")
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"), help="Host address to bind")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8765)), help="Port to listen on")
     args = parser.parse_args()
     run_server(host=args.host, port=args.port)

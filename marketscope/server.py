@@ -1279,14 +1279,17 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             self._send_json({"recorded": False, "error": str(e)}, status=500)
 
 
-def run_server(host: str = "127.0.0.1", port: int = 8765) -> None:
+def run_server(host: Optional[str] = None, port: Optional[int] = None) -> None:
+    host = host or os.environ.get("HOST", "127.0.0.1")
+    port = port or int(os.environ.get("PORT", "8765"))
+    env_name = os.environ.get("MS_ENV", "production")
     db = DatabaseManager(DEFAULT_DB_PATH)
     server_address = (host, port)
     httpd = ThreadingHTTPServer(server_address, MarketScopeHandler)
     httpd.db_manager = db
     print(f"============================================================")
     print(f" MarketScope NSE Flow Terminal running on http://{host}:{port}")
-    print(f" Mode: Real Exchange Feed & Previous Session Archive")
+    print(f" Mode: Market Data Feed & Previous Session Archive [{env_name}]")
     print(f" Database: {DEFAULT_DB_PATH}")
     print(f"============================================================")
     try:
@@ -1298,7 +1301,7 @@ def run_server(host: str = "127.0.0.1", port: int = 8765) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MarketScope HTTP Server")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address to bind")
-    parser.add_argument("--port", type=int, default=8765, help="Port to listen on")
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"), help="Host address to bind")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")), help="Port to listen on")
     args = parser.parse_args()
     run_server(host=args.host, port=args.port)

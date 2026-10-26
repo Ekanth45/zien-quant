@@ -9,7 +9,7 @@ This document details the architectural design, threading model, database schema
 ```mermaid
 graph TD
     subgraph Data Sources
-        NSE[Real Exchange Candle Feed]
+        NSE[Yahoo Finance Candle Feed]
         LocalCandles[(Candle Archive SQLite)]
     end
 
@@ -23,7 +23,7 @@ graph TD
 
     subgraph AI Intelligence
         Ollama[Local Ollama Daemon gemma4:12b]
-        Validator[LLM Hallucination Validator]
+        Validator[LLM Numerical Consistency Validator]
         Rules[Deterministic Rules Fallback]
     end
 
@@ -176,7 +176,7 @@ CREATE INDEX IF NOT EXISTS idx_stocks_sector ON stocks(sector);
 
 ## 4. Quantitative Processing & R:R Gating
 
-The terminal computes institutional setups deterministically:
+The terminal computes quantitative setups deterministically:
 1. **Pivot & Order Block Identification**:
    - Pivot Highs: $High_t > High_{t-1} \land High_t > High_{t+1}$
    - Pivot Lows: $Low_t < Low_{t-1} \land Low_t < Low_{t+1}$

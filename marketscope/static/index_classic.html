@@ -19,7 +19,7 @@
           <path d="M6 14 Q 12 12, 18 22 T 28 24" fill="none" stroke="#ff1744" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="feed-pill live-pill" id="feedPill" title="Feed status: Real-time Live Scraper (NSE & BSE)">
+      <div class="feed-pill live-pill" id="feedPill" title="Feed status: Live Scraper (NSE & BSE)">
         <span class="pulse-dot"></span>
         <span id="feedModeLabel">LIVE</span>
       </div>
@@ -163,7 +163,7 @@
       </div>
       <div class="pulse-summary-block">
         <p class="pulse-summary-text" id="pulseSummaryText">
-          Synthesizing real-time NSE breadth, sector leadership, and order flow using local LLM (gemma4:12b)...
+          Synthesizing NSE breadth, sector leadership, and order flow using local LLM (gemma4:12b)...
         </p>
       </div>
       <div class="pulse-actions-block">
@@ -367,7 +367,7 @@
       <div class="scanner-header">
         <div class="scanner-title-area">
           <h3>NSE & BSE FLOW SCANNER</h3>
-          <span class="caption" id="scannerCaption">Live real-time indicators across 2,600+ NSE & BSE equities</span>
+          <span class="caption" id="scannerCaption">Live technical indicators across 2,600+ NSE & BSE equities</span>
         </div>
         <div class="scanner-filters">
           <div class="search-box">
@@ -419,7 +419,7 @@
   <footer class="terminal-footer">
     <div class="footer-content">
       <div class="disclaimer-text">
-        <strong>Research Terminal Notice:</strong> Algorithmic directional scores, BUY/SELL signals, and order block heuristics are deterministic technical indicators for educational and research purposes only. Real-time market analytics directly scraped from National Stock Exchange (NSE) and Bombay Stock Exchange (BSE).
+        <strong>Research Terminal Notice:</strong> Algorithmic directional scores, BUY/SELL signals, and order block heuristics are deterministic technical indicators for educational and research purposes only. Market analytics calculated from public Yahoo Finance chart candles for National Stock Exchange (NSE) equities.
       </div>
       <div class="footer-links">
         <span>Order Block Terminal v2.0.0</span>
@@ -525,7 +525,7 @@
             <!-- Local LLM Deep Synthesis Trigger & Output Box -->
             <button class="btn-laya-deep-analyze" id="btnLayaDeepAnalyze">
               <span class="btn-icon">🧠</span>
-              <span class="btn-text" id="btnLayaDeepText">Institutional Briefing (Local LLM)</span>
+              <span class="btn-text" id="btnLayaDeepText">Quantitative Briefing (Local LLM)</span>
             </button>
             <div class="laya-llm-briefing-box" id="layaLlmBriefingBox" style="display: none;">
               <div class="llm-brief-header">
@@ -633,7 +633,7 @@ RSI = 100 - (100 / (1 + gains / losses))
 
         <h3>5. Strict Non-Financial Advice Disclaimer</h3>
         <p class="disclaimer-callout">
-          MarketScope is an automated analytics visualization terminal. Scores do not constitute financial advice, trade signals, or guaranteed outcomes. Real-time market analytics directly scraped from National Stock Exchange (NSE) and Bombay Stock Exchange (BSE).
+          MarketScope is an automated analytics visualization terminal. Scores do not constitute financial advice, trade signals, or guaranteed outcomes. Market analytics calculated from public Yahoo Finance chart candles for National Stock Exchange (NSE) equities.
         </p>
       </div>
     </div>
@@ -680,7 +680,7 @@ RSI = 100 - (100 / (1 + gains / losses))
               <span class="sched-time">09:15 - 15:30 IST</span>
             </div>
             <div class="sched-card-title">Continuous Regular Trading</div>
-            <p class="sched-card-desc">Full liquidity across NSE & BSE equities, ETFs, and index derivatives. Live sub-second order book matching and Laya AI decision triggers.</p>
+            <p class="sched-card-desc">Full liquidity across NSE & BSE equities, ETFs, and index derivatives. Intraday candle analysis and Laya AI decision triggers.</p>
           </div>
           <div class="schedule-card" id="schedCardPost">
             <div class="sched-card-header">
@@ -793,7 +793,7 @@ RSI = 100 - (100 / (1 + gains / losses))
           <h3>Laya AI Copilot</h3>
           <span class="model-badge">gemma4:12b (Local)</span>
         </div>
-        <p class="drawer-subtitle">Institutional quantitative analyst & trade rationale copilot</p>
+        <p class="drawer-subtitle">Quantitative analyst & trade rationale copilot</p>
       </div>
       <button class="close-btn" id="btnCloseCopilotDrawer" aria-label="Close Copilot">&times;</button>
     </div>

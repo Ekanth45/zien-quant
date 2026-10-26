@@ -1,11 +1,176 @@
 /**
  * MarketScope · NSE Flow Terminal Client Application
- * Handles real-time polling, trajectory SVG canvas rendering,
+ * Handles session polling, trajectory SVG canvas rendering,
  * hover HUD situation panels, SVG candlestick charting engine,
  * scanner sorting/filtering, and owner configuration.
  */
 
-import { publicAPI } from './sample-feed.js';
+class PublicFeedAdapter {
+  constructor() {
+    this.hasBackend = null;
+  }
+
+  async checkBackend() {
+    if (this.hasBackend !== null) return this.hasBackend;
+    try {
+      const res = await fetch('/api/bootstrap', { method: 'GET', cache: 'no-cache' });
+      if (res.ok) {
+        this.hasBackend = true;
+        return true;
+      }
+    } catch {
+      // Backend not reached
+    }
+    this.hasBackend = false;
+    return false;
+  }
+
+  async getBootstrap() {
+    try {
+      const res = await fetch('/api/bootstrap');
+      if (res.ok) return await res.json();
+    } catch (err) {
+      console.error('Failed to fetch bootstrap:', err);
+    }
+    return {
+      config: {
+        brand_name: 'MarketScope',
+        tagline: 'NSE Flow Terminal & Directional Intelligence',
+        default_timeframe: 5,
+        refresh_interval_ms: 2000,
+      },
+      has_owner: false,
+      catalogue: {},
+      session: { authenticated: false, email: null, role: null, csrf_token: null },
+      provider_status: {
+        live_available: false,
+        reason: 'Backend service unreachable',
+      },
+    };
+  }
+
+  async getMarketSnapshot(mode = 'live', timeframe = 5, session = null) {
+    try {
+      let url = `/api/market?timeframe=${encodeURIComponent(timeframe)}`;
+      if (session) {
+        url += `&session=${encodeURIComponent(session)}`;
+      }
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+      if (res.status === 503) {
+        const errData = await res.json().catch(() => ({}));
+        return { error: 'feed_unavailable', status: 503, detail: errData.detail || 'Live feed unavailable' };
+      }
+      return { error: 'http_error', status: res.status };
+    } catch (err) {
+      return { error: 'feed_unavailable', status: 503, detail: err.message };
+    }
+  }
+
+  async getStockCandles(symbol, timeframe = 5) {
+    try {
+      const res = await fetch(`/api/stock?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`);
+      if (res.ok) return await res.json();
+      return { error: 'candles_unavailable', status: res.status, candles: [] };
+    } catch (err) {
+      return { error: 'network_error', detail: err.message, candles: [] };
+    }
+  }
+
+  async getSessionSummary(dateStr = null) {
+    try {
+      let url = '/api/session/summary';
+      if (dateStr) {
+        url += `?date=${encodeURIComponent(dateStr)}`;
+      }
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+      const err = await res.json().catch(() => ({}));
+      return { error: err.error || 'session_not_found', detail: err.detail || 'Session summary unavailable', status: res.status };
+    } catch (err) {
+      return { error: 'network_error', detail: err.message, status: 503 };
+    }
+  }
+
+  async getAIPulse(refresh = false) {
+    try {
+      const url = `/api/ai/pulse${refresh ? '?refresh=1' : ''}`;
+      const res = await fetch(url);
+      if (res.ok) return await res.json();
+      return { error: 'pulse_unavailable', status: res.status };
+    } catch (err) {
+      return { error: 'network_error', detail: err.message };
+    }
+  }
+
+  async getAIAnalyze(symbol, timeframe = 5, refresh = false, poll = false) {
+    try {
+      const params = new URLSearchParams({
+        symbol: symbol,
+        timeframe: timeframe.toString(),
+      });
+      if (refresh) params.append('refresh', '1');
+      if (poll) params.append('poll', '1');
+
+      const res = await fetch(`/api/ai/analyze?${params.toString()}`);
+      if (res.ok) return await res.json();
+      return { error: 'analysis_unavailable', status: res.status };
+    } catch (err) {
+      return { error: 'network_error', detail: err.message };
+    }
+  }
+
+  async sendAIChat(message, symbol = null) {
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, symbol }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: 'chat_network_error', detail: err.message };
+    }
+  }
+
+  async searchStockDatabase(query, exchange = 'ALL', limit = 12) {
+    try {
+      const res = await fetch(`/api/stocks/database?q=${encodeURIComponent(query)}&exchange=${encodeURIComponent(exchange)}&limit=${limit}`);
+      if (res.ok) return await res.json();
+      return { stocks: [], total_matches: 0 };
+    } catch (err) {
+      return { stocks: [], total_matches: 0, error: err.message };
+    }
+  }
+
+  async trackStock(symbol) {
+    try {
+      const res = await fetch('/api/stocks/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  async untrackStock(symbol) {
+    try {
+      const res = await fetch('/api/stocks/untrack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol }),
+      });
+      return await res.json();
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+}
+
+const publicAPI = new PublicFeedAdapter();
 
 // Application State
 const state = {
@@ -823,7 +988,7 @@ function renderSignalTiles(tiles) {
     const isBull = type === 'buy';
     const isPos = s.change_pct >= 0;
 
-    // Generate 5-bar volume profile distribution for institutional order flow visual
+    // Generate 5-bar volume profile distribution for volume visual
     const candles = s.candles_preview || [];
     let vols = [];
     if (candles.length >= 5) {
@@ -1322,7 +1487,7 @@ async function fetchLayaDeepAnalysis(symbol, timeframe, refresh = false) {
     console.error('Deep analyze error:', err);
   } finally {
     el.btnLayaDeepAnalyze.classList.remove('loading');
-    if (el.btnLayaDeepText) el.btnLayaDeepText.textContent = 'Institutional Briefing';
+    if (el.btnLayaDeepText) el.btnLayaDeepText.textContent = 'Quantitative Briefing';
   }
 }
 
@@ -1351,7 +1516,7 @@ function renderLayaBriefing(data) {
   }
 
   // Render text safely using textContent (XSS prevention)
-  const rawText = data.institutional_briefing || '';
+  const rawText = data.quantitative_briefing || data.institutional_briefing || '';
   const paragraphs = rawText.split('\n\n');
   for (const pText of paragraphs) {
     const pEl = document.createElement('p');

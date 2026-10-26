@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ main ]
@@ -33,6 +36,26 @@ jobs:
         run: |
           python scripts/secret_scan.py --working-tree-only
 
+      - name: Verify test count threshold
+        run: |
+          python -c "import unittest; loader = unittest.TestLoader(); suite = loader.discover('tests'); count = suite.countTestCases(); print(f'Discovered {count} tests'); assert count >= 139, f'Test count {count} is below threshold 139'"
+
       - name: Run test suite (Standard Library)
         run: |
           python -m unittest discover -s tests
+          python -m unittest discover -s marketscope/tests
+
+      - name: Set up Node.js for frontend regression tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install development-only frontend test tools
+        run: npm ci --ignore-scripts
+
+      - name: Check workspace modules and interactions
+        run: |
+          node --check marketscope/static/workspace.js
+          node --check marketscope/static/workspace-api.js
+          npm test

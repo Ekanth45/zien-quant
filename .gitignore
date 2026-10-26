@@ -17,6 +17,7 @@ work/
 *.log
 
 # Python Cache & Virtual Environments
+node_modules/
 __pycache__/
 *.pyc
 *.pyo
