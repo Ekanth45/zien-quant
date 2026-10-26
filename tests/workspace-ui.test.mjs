@@ -16,7 +16,7 @@ function response(body, status = 200) {
   return { ok: status < 400, status, json: async () => structuredClone(body) };
 }
 
-async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS' } = {}) {
+async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS', trajectoryGap = false } = {}) {
   const { window, document } = parseHTML(html);
   const requests = [];
   const storage = new Map();
@@ -65,7 +65,7 @@ async function workspace({ offline = false, candlesUnavailable = false, sessionS
     const url = new URL(path, 'http://workspace.test');
     switch (url.pathname) {
       case '/api/bootstrap': return response({ config: { monitored_symbols: symbols, default_timeframe: 5, score_threshold: 65 }, catalogue: Object.fromEntries(symbols.map(s => [s, { name: rawStocks[s].name }])), session: { authenticated: false }, has_owner: false });
-      case '/api/market': return offline ? response({ error: 'feed_unavailable', detail: 'The received feed is offline.' }, 503) : response({ mode: 'live', data_mode: sessionState === 'LIVE' ? 'LIVE' : 'PREVIOUS_SESSION', session_state: sessionState, session_date: fixture.session_date, timeframe: Number(url.searchParams.get('timeframe')), stocks: rawStocks, trajectories: [{ symbol: 'RELIANCE', points: [0, .3, .7, 1.4] }, { symbol: 'TCS', points: [0, -.2, -.7, -1.2] }] });
+      case '/api/market': return offline ? response({ error: 'feed_unavailable', detail: 'The received feed is offline.' }, 503) : response({ mode: 'live', data_mode: sessionState === 'LIVE' ? 'LIVE' : 'PREVIOUS_SESSION', session_state: sessionState, session_date: fixture.session_date, timeframe: Number(url.searchParams.get('timeframe')), stocks: rawStocks, trajectories: [{ symbol: 'RELIANCE', points: trajectoryGap ? [0, .3, null, 1.4] : [0, .3, .7, 1.4] }, { symbol: 'TCS', points: [0, -.2, -.7, -1.2] }] });
       case '/api/market/schedule': return response({ state: 'CLOSED', action: 'opens', target_timestamp: 1792986300, target_time_ist: '2026-10-26 09:15 IST' });
       case '/api/stocks/database': return response({ total_database: 2, total_matches: 2, stocks: symbols.map(s => ({ symbol: s, name: rawStocks[s].name, exchange: 'NSE' })) });
       case '/api/stock': return candlesUnavailable ? response({ error: 'candles_unavailable' }, 404) : response({ symbol: url.searchParams.get('symbol'), candles: fixture.stocks[url.searchParams.get('symbol')].candles });
@@ -146,4 +146,28 @@ test('source failure shows an explicit empty state while catalogue and methodolo
   assert.equal(document.querySelectorAll('[data-result]').length, 2);
   ui.navigate('methodology');
   assert.match(document.getElementById('mainContent').textContent, /Inspect the signal/);
+});
+
+test('missing trajectory observations remain visual gaps rather than an interpolated segment', async () => {
+  const { document } = await workspace({ trajectoryGap: true });
+  const path = document.querySelector('[data-trajectory="RELIANCE"] .stock-trace').getAttribute('d');
+  assert.equal((path.match(/M/g) || []).length, 2);
+  assert.ok(!/NaN|undefined/.test(path));
+});
+
+test('automatic live-session charts refresh their bounded cache after the observation interval', async () => {
+  const { ui, requests } = await workspace({ sessionState: 'LIVE' });
+  await ui.hydrateStock('RELIANCE');
+  const count = () => requests.filter(r => r.path.startsWith('/api/stock?') && r.path.includes('RELIANCE')).length;
+  const initial = count();
+  await ui.hydrateStock('RELIANCE');
+  assert.equal(count(), initial, 'Fresh selected history must not generate duplicate requests');
+  const originalNow = Date.now;
+  try {
+    Date.now = () => originalNow() + 31000;
+    await ui.hydrateStock('RELIANCE');
+  } finally {
+    Date.now = originalNow;
+  }
+  assert.equal(count(), initial + 1, 'Selected live history must not stay permanently cached');
 });

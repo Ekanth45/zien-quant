@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-10-26
+## [2.0.0] - 2026-10-26
+
+Development checks include Node DOM/API regression tests in CI. Trajectory gaps stay gaps, selected live candle history has a bounded refresh cache, and confirmed charts exclude open candles.
 
 ### Added
 - **Reference workspace design**: A responsive Zien Quant frontend based on `finance reff/outputs/marketscope/static/`, with sidebar navigation, market overview, scanner, watchlist, stock details, owner controls, and the Laya assistant.
