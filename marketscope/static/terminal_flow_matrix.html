@@ -1,1343 +1,1164 @@
 <!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>BLOOMBERG PROFESSIONAL // ZIEN QUANT ORDER BLOCK TERMINAL</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+  <link rel="stylesheet" href="/static/cyber_terminal.css"/>
+  <script src="/static/tailwind.min.js"></script>
+  <style>
+    :root {
+      --bb-amber: #ff9900;
+      --bb-amber-dim: #cc7a00;
+      --bb-amber-bg: #291800;
+      --bb-black: #06090e;
+      --bb-panel: #0a0e17;
+      --bb-panel-alt: #0e1422;
+      --bb-border: #162032;
+      --bb-border-bright: #22334d;
+      --bb-bull: #00ff88;
+      --bb-bull-bg: #04140b;
+      --bb-bear: #ff1744;
+      --bb-bear-bg: #180408;
+      --bb-cyan: #00e5ff;
+      --bb-text: #e2e8f0;
+      --bb-text-dim: #94a3b8;
+    }
+    
+    body {
+      background-color: var(--bb-black);
+      color: var(--bb-text);
+      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
 
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>CYBERNETIC QUANT TERMINAL // NSE-BSE ORDER BLOCK ANALYZER</title>
-<!-- Cyber Terminal Native Production Stylesheet -->
-<link rel="icon" href="/static/favicon.svg"/>
-<link rel="stylesheet" href="/static/cyber_terminal.css"/>
+    /* Subtle Bloomberg Terminal Grid */
+    .bb-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 153, 0, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 153, 0, 0.025) 1px, transparent 1px);
+    }
 
-<!-- Google Fonts: JetBrains Mono & Inter -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS v3 with Plugins -->
-<script src="/static/tailwind.min.js"></script>
-<script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            void: '#03050a',
-            surface: '#070b14',
-            surfaceBorder: '#121d2f',
-            bull: {
-              DEFAULT: '#00ff88',
-              glow: 'rgba(0, 255, 136, 0.4)',
-              dim: '#004724',
-              bg: '#04160e'
-            },
-            bear: {
-              DEFAULT: '#ff1744',
-              glow: 'rgba(255, 23, 68, 0.4)',
-              dim: '#4f0612',
-              bg: '#180408'
-            },
-            cyanLaser: '#00e5ff',
-            amberGold: '#ffab00'
-          },
-          fontFamily: {
-            mono: ['"JetBrains Mono"', 'monospace'],
-            sans: ['"Inter"', 'sans-serif']
-          }
+    /* Bloomberg Glow Filters */
+    .glow-amber { filter: drop-shadow(0 0 6px rgba(255, 153, 0, 0.65)); }
+    .glow-bull { filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.65)); }
+    .glow-bear { filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.65)); }
+    .glow-cyan { filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.65)); }
+
+    /* Custom Slim Scrollbars */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #070a10; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--bb-amber); }
+
+    /* Animated Cursor */
+    @keyframes bbCursorBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    .bb-cursor { animation: bbCursorBlink 1s infinite; }
+
+    /* Pulsing Signal Dot */
+    @keyframes pulseGlow { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+    .bb-pulse { animation: pulseGlow 2s infinite ease-in-out; }
+  </style>
+</head>
+<body class="w-full min-h-screen bb-grid text-slate-300">
+
+  <!-- ===================================================================== -->
+  <!-- 1. BLOOMBERG TOP COMMAND BAR & FUNCTION KEY RIBBON                    -->
+  <!-- ===================================================================== -->
+  <header class="border-b border-[#1f2d42] bg-[#070b12] sticky top-0 z-50 shadow-2xl">
+    <!-- Top Row: Command Prompt & Global Market Telemetry -->
+    <div class="px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-[#141d2b]">
+      <!-- Left: Bloomberg Logo & Command Input -->
+      <div class="flex items-center space-x-2.5">
+        <span class="bg-[#ff9900] text-black font-black text-xs px-2 py-0.5 tracking-wider rounded-sm shadow">BLOOMBERG</span>
+        <span class="text-[10px] text-[#ffb000] font-bold tracking-widest hidden sm:inline">PROFESSIONAL SERVICE</span>
+        <span class="text-slate-600">|</span>
+        
+        <!-- Command Input Box -->
+        <div class="flex items-center bg-[#0c121d] border border-[#ff9900]/60 px-2 py-0.5 rounded shadow-inner">
+          <span class="text-[#ff9900] font-bold text-xs mr-1.5">&gt;</span>
+          <input id="bbCommandInput" type="text" value="NIFTY50 Index OB &lt;GO&gt;" readonly class="bg-transparent text-xs text-[#ffb000] font-bold outline-none border-none w-48 sm:w-60 font-mono tracking-wide cursor-pointer" title="Click to search stocks (Ctrl+K)" onclick="openSearchModal()"/>
+          <span class="w-1.5 h-3.5 bg-[#ff9900] bb-cursor mr-1"></span>
+          <button onclick="openSearchModal()" class="bg-[#ff9900] hover:bg-[#ffb84d] text-black font-extrabold text-[10px] px-2 py-0.2 rounded uppercase transition-colors">&lt;GO&gt;</button>
+        </div>
+      </div>
+
+      <!-- Center: Schedule & Exchange Status -->
+      <div class="flex items-center space-x-3 text-xs font-mono">
+        <div class="flex items-center space-x-1.5 bg-[#0e1422] border border-[#1e2a3f] px-2.5 py-0.5 rounded">
+          <span id="bbStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 bb-pulse"></span>
+          <span class="text-slate-400 text-[10px]">MARKET:</span>
+          <span id="bbMarketState" class="font-extrabold text-xs text-white">LIVE OPEN</span>
+          <span class="text-slate-600">·</span>
+          <span id="bbCountdownPhrase" class="text-[#ffb000] text-[10px] font-semibold">Closes in --:--</span>
+        </div>
+
+        <div class="hidden lg:flex items-center space-x-1.5 text-slate-400 text-[11px]">
+          <span>FEED:</span>
+          <span class="text-cyan-400 font-bold">YAHOO NSE 5M</span>
+          <span class="text-slate-600">|</span>
+          <span>RTT:</span>
+          <span id="bbLatency" class="text-emerald-400 font-bold">12 ms</span>
+        </div>
+      </div>
+
+      <!-- Right: Realtime IST Clock & Audio Toggle -->
+      <div class="flex items-center space-x-2.5 font-mono text-xs">
+        <button id="bbAudioToggle" class="px-2 py-0.5 rounded bg-[#0e1422] border border-[#1e2a3f] text-slate-400 hover:text-[#ff9900] text-[10px] flex items-center gap-1 transition-colors" title="Toggle audio alert cues">
+          <span id="bbAudioIcon">🔇</span>
+          <span class="hidden sm:inline">AUDIO</span>
+        </button>
+        <div class="bg-[#05080e] border border-[#1e2a3f] px-2.5 py-0.5 rounded text-white font-bold tracking-wider text-xs">
+          <span id="bbClock">--:--:--</span> <span class="text-[9px] text-[#ff9900]">IST</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Function Keys & Navigation Ribbon -->
+    <div class="px-3 py-1 flex items-center justify-between text-[10px] font-mono overflow-x-auto bg-[#05080f] select-none">
+      <!-- Function Buttons -->
+      <div class="flex items-center space-x-1.5 whitespace-nowrap">
+        <button onclick="location.reload()" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;ESC&gt; CANCEL</button>
+        <button onclick="openHelpModal()" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;F1&gt; HELP</button>
+        <button onclick="openSearchModal()" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;F2&gt; GO</button>
+        <button onclick="window.open('/', '_self')" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;F3&gt; WORKSPACE</button>
+        <button onclick="window.open('/flow', '_self')" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;F4&gt; FLOW RIVER</button>
+        <button onclick="openSnapshotModal()" class="px-1.5 py-0.5 bg-[#0e1422] hover:bg-[#1a2538] text-[#ffb000] border border-[#2a3a52] rounded">&lt;F12&gt; SNAPSHOT</button>
+      </div>
+
+      <!-- Timeframe Selector -->
+      <div class="flex items-center space-x-2 pl-4">
+        <span class="text-slate-500 font-semibold">TF:</span>
+        <div class="flex items-center space-x-1">
+          <button class="bb-tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white" data-tf="1">1M</button>
+          <button class="bb-tf-btn px-2 py-0.5 rounded bg-[#ff9900]/20 text-[#ffb000] border border-[#ff9900]/50 font-bold" data-tf="5">5M</button>
+          <button class="bb-tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white" data-tf="15">15M</button>
+          <button class="bb-tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white" data-tf="60">1H</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 2. MAIN 3-SECTION TERMINAL SPLIT VIEW (EXACT REPLICA OF USER IMAGES)   -->
+  <!-- ===================================================================== -->
+  <main class="w-full grid grid-cols-1 xl:grid-cols-12 gap-0 min-h-[calc(100vh-80px)] bg-[#05080e] overflow-hidden">
+
+    <!-- ------------------------------------------------------------------- -->
+    <!-- SECTION 1 (LEFT PANE: ~43% WIDTH / 5.2 COLS)                        -->
+    <!-- INTRADAY TRAJECTORY FLOW RIVER + SENTIMENT METER + FLOATING HUD      -->
+    <!-- ------------------------------------------------------------------- -->
+    <section class="xl:col-span-5 border-r border-[#162032] flex flex-col bg-[#05080f] relative min-h-[760px]">
+      
+      <!-- Top Sentiment & Momentum Spectrum Strip -->
+      <div class="px-3 py-2 border-b border-[#141d2b] bg-[#070b13] flex items-center justify-between text-xs font-mono select-none">
+        <div class="flex items-center space-x-2">
+          <span class="text-cyan-400 font-bold tracking-wider text-[11px] uppercase flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            INTRADAY FLOW TRAJECTORY STREAM
+          </span>
+        </div>
+
+        <!-- Sentiment Spark Particle Bar -->
+        <div class="flex items-center space-x-2.5 bg-[#0a0e18] px-2.5 py-1 rounded border border-[#1a2538] text-[10px]">
+          <div class="flex items-center space-x-1 text-[#00ff88] font-bold">
+            <span>▲</span>
+            <span>BULL</span>
+            <span id="bbBullRatio" class="bg-[#00ff88]/20 px-1 rounded">68%</span>
+          </div>
+          <!-- Dual Spectrum Progress Bar -->
+          <div class="w-28 h-2 bg-[#05080e] rounded-sm overflow-hidden flex items-center">
+            <div id="bbBullBar" class="h-full bg-[#00ff88] glow-bull" style="width: 68%;"></div>
+            <div id="bbBearBar" class="h-full bg-[#ff1744] glow-bear" style="width: 32%;"></div>
+          </div>
+          <div class="flex items-center space-x-1 text-[#ff1744] font-bold">
+            <span id="bbBearRatio" class="bg-[#ff1744]/20 px-1 rounded">32%</span>
+            <span>BEAR</span>
+            <span>▼</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Canvas Canvas Container with Left Y-Axis Scale Rail -->
+      <div class="relative flex-1 w-full overflow-hidden flex bg-[#03060a]">
+
+        <!-- Left Y-Axis Percentage Scale Rail -->
+        <div class="w-12 border-r border-[#101724] flex flex-col justify-between py-6 text-[9px] font-mono select-none text-right pr-2 z-20 bg-[#04070d]/80 backdrop-blur-sm">
+          <div class="text-[#00ff88] font-extrabold">+5.0%</div>
+          <div class="text-[#00ff88]/80">+3.0%</div>
+          <div class="text-[#00ff88]/70">+2.0%</div>
+          <div class="text-[#00ff88]/70 font-bold">+1.0%</div>
+          <div class="text-[#00ff88]/80">+0.5%</div>
+          <!-- Baseline Zero Marker -->
+          <div class="text-white font-extrabold text-[10px] bg-[#1e293b] px-1 py-0.2 rounded border border-slate-600 shadow">0.00</div>
+          <div class="text-[#ff1744]/80">-0.5%</div>
+          <div class="text-[#ff1744]/80 font-bold">-1.0%</div>
+          <div class="text-[#ff1744]/70">-2.0%</div>
+          <div class="text-[#ff1744]/80 font-extrabold">-3.0%</div>
+          <div class="text-[#ff1744] font-black">-4.0%</div>
+        </div>
+
+        <!-- Canvas Workspace -->
+        <div id="canvasContainer" class="relative flex-1 h-full w-full overflow-hidden">
+          <canvas id="trajCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+          <!-- ------------------------------------------------------------- -->
+          <!-- FLOATING HUD ORDER BLOCK TERMINAL CARD (EXACTLY AS IN IMAGE 2) -->
+          <!-- ------------------------------------------------------------- -->
+          <div id="floatingHudCard" class="absolute top-[22%] left-[20%] w-72 sm:w-80 bg-[#060d16]/95 border-2 border-[#00ff88]/80 rounded-xl p-3 shadow-2xl backdrop-blur-md z-30 glow-bull transition-all duration-150">
+            <!-- HUD Card Header -->
+            <div class="flex items-center justify-between border-b border-[#00ff88]/30 pb-2 mb-2">
+              <div class="flex items-center space-x-2">
+                <div class="w-3.5 h-3.5 rounded bg-[#00ff88]/20 border border-[#00ff88] flex items-center justify-center">
+                  <div class="w-1.5 h-1.5 bg-[#00ff88] rounded-full bb-pulse"></div>
+                </div>
+                <h3 class="text-xs font-black tracking-wide text-white uppercase flex items-center gap-1.5 font-mono">
+                  ORDER BLOCK TERMINAL
+                  <span id="hudZoneTag" class="text-[8px] bg-[#00ff88]/20 text-[#00ff88] px-1 rounded border border-[#00ff88]/40">L-ZONE</span>
+                </h3>
+              </div>
+              <!-- Mini Header Sparkline -->
+              <svg class="w-14 h-5" viewBox="0 0 60 20">
+                <polyline id="hudSparkline" fill="none" points="0,15 15,13 25,7 38,9 48,3 60,1" stroke="#00ff88" stroke-width="1.8"></polyline>
+              </svg>
+            </div>
+
+            <!-- HUD Attribute Rows -->
+            <div class="space-y-1.5 text-[10px] font-mono">
+              <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
+                <span class="text-slate-400 font-semibold tracking-wider">SPOTLIGHT</span>
+                <span id="hudSymbol" class="text-white font-extrabold flex items-center gap-1 text-[11px]">
+                  RELIANCE
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-ping"></span>
+                </span>
+              </div>
+              <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
+                <span class="text-slate-400 font-semibold tracking-wider">COMPOSITE SCORE</span>
+                <span id="hudScore" class="text-[#00ff88] font-extrabold tracking-wide">86.4 / 100 [BULLISH]</span>
+              </div>
+              <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
+                <span class="text-slate-400 font-semibold tracking-wider">PRICE / VWAP</span>
+                <span id="hudPriceVwap" class="text-white font-bold">₹1,192.40 <span class="text-[#ffb000] text-[9px]">(VWAP: 1,184.20)</span></span>
+              </div>
+              <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
+                <span class="text-slate-400 font-semibold tracking-wider">RVOL / VOLUME</span>
+                <span id="hudRvolVol" class="text-cyan-400 font-bold">2.41x · VOL 42.1L</span>
+              </div>
+              <div class="flex justify-between items-center py-0.5">
+                <span class="text-slate-400 font-semibold tracking-wider">CPR / OB ZONE</span>
+                <span id="hudObZone" class="text-[#00ff88] font-bold uppercase text-[9px]">DEMAND OB [1,175 - 1,184]</span>
+              </div>
+            </div>
+
+            <!-- Interactive Inspect Button -->
+            <div class="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between">
+              <span id="hudLayaBadge" class="text-[9px] text-emerald-400 font-semibold">✓ Laya AI Confirmed</span>
+              <button id="hudInspectBtn" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-black text-[10px] px-2.5 py-1 rounded shadow transition-all cursor-pointer">
+                Inspect Details →
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Time Markers X-Axis -->
+          <div class="absolute bottom-2 left-3 right-3 flex justify-between text-[9px] font-mono text-slate-500 select-none border-t border-[#162032] pt-1">
+            <span>09:15 OPEN</span>
+            <span>11:00</span>
+            <span>13:00</span>
+            <span>15:15</span>
+            <span class="text-cyan-400 font-bold bg-cyan-950/60 px-1.5 py-0.2 rounded border border-cyan-800">15:30 CLOSE</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------------- -->
+    <!-- SECTION 2 & 3 (CENTER & RIGHT PANES: ~57% WIDTH / 7 COLS)           -->
+    <!-- DUAL BUILD-UP MATRIX (CENTER) + HERO SPOTLIGHT CARDS (RIGHT)        -->
+    <!-- ------------------------------------------------------------------- -->
+    <section class="xl:col-span-7 flex flex-col min-h-[760px] bg-[#04070e]">
+
+      <!-- ================================================================ -->
+      <!-- TOP HALF: LONG BUILD-UP MATRIX & BULLISH HERO PANELS             -->
+      <!-- ================================================================ -->
+      <div class="flex-1 border-b-2 border-[#162032] p-2.5 bg-gradient-to-b from-[#02140a]/40 via-[#010905] to-transparent flex flex-col justify-between">
+        
+        <!-- Long Build-Up Section Ribbon Header -->
+        <div class="flex items-center justify-between mb-2 pb-1 border-b border-[#00ff88]/20 font-mono">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 bg-[#00ff88] rounded-sm glow-bull"></span>
+            <h2 class="text-xs font-black tracking-widest text-[#00ff88] uppercase">LONG BUILD-UP MATRIX // BULLISH FLOW</h2>
+            <span class="text-[9px] bg-[#00ff88]/20 text-[#00ff88] px-1.5 py-0.2 rounded font-bold">TIER &gt; 70.0</span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-mono">
+            BULLISH DETECTED: <span id="longBuildupCount" class="text-[#00ff88] font-bold">--</span>
+          </div>
+        </div>
+
+        <!-- Split Grid: 8 Dense Long Build-up Cards + 3 Bullish Hero Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 items-stretch">
+          
+          <!-- 8 Dense Long Build-up Micro Cards (Center ~7 cols) -->
+          <div id="longBuildupGrid" class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
+            <!-- Populated dynamically by matrix engine -->
+            <div class="p-2 bg-[#04120b] border border-[#00ff88]/30 rounded text-center text-xs text-slate-500">Loading bullish matrix...</div>
+          </div>
+
+          <!-- 3 Stacked Right-side Hero Bullish Analysis Cards (Right ~5 cols) -->
+          <div id="longHeroCards" class="lg:col-span-5 flex flex-col justify-between space-y-1.5">
+            <!-- Populated dynamically by matrix engine with Best Stock of the Day at Top -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- BOTTOM HALF: SHORT BUILD-UP MATRIX & BEARISH HERO PANELS         -->
+      <!-- ================================================================ -->
+      <div class="flex-1 p-2.5 bg-gradient-to-b from-[#180408]/40 via-[#0a0204] to-transparent flex flex-col justify-between">
+        
+        <!-- Short Build-Up Section Ribbon Header -->
+        <div class="flex items-center justify-between mb-2 pb-1 border-b border-[#ff1744]/20 font-mono">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 bg-[#ff1744] rounded-sm glow-bear"></span>
+            <h2 class="text-xs font-black tracking-widest text-[#ff1744] uppercase">SHORT BUILD-UP MATRIX // BEARISH FLOW</h2>
+            <span class="text-[9px] bg-[#ff1744]/20 text-[#ff1744] px-1.5 py-0.2 rounded font-bold">TIER &lt; 50.0</span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-mono">
+            BEARISH DETECTED: <span id="shortBuildupCount" class="text-[#ff1744] font-bold">--</span>
+          </div>
+        </div>
+
+        <!-- Split Grid: 8 Dense Short Build-up Cards + 3 Bearish Hero Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 items-stretch">
+          
+          <!-- 8 Dense Short Build-up Micro Cards (Center ~7 cols) -->
+          <div id="shortBuildupGrid" class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5">
+            <!-- Populated dynamically by matrix engine -->
+            <div class="p-2 bg-[#180408] border border-[#ff1744]/30 rounded text-center text-xs text-slate-500">Loading bearish matrix...</div>
+          </div>
+
+          <!-- 3 Hero Bear Cards on Right (Right ~5 cols) -->
+          <div id="shortHeroCards" class="lg:col-span-5 flex flex-col justify-between space-y-1.5">
+            <!-- Populated dynamically by matrix engine with Worst Stock of the Day at Bottom -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- 3. FOOTER TELEMETRY & AUDIT BAR                                       -->
+  <!-- ===================================================================== -->
+  <footer class="border-t border-[#162032] bg-[#05080e] px-4 py-2 flex flex-wrap items-center justify-between text-[11px] font-mono select-none text-slate-400 gap-3">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="footerFeedStatus" class="text-white font-semibold">FEED: YAHOO FINANCE 5M VERIFIED</span>
+      </div>
+      <span class="text-slate-600">|</span>
+      <div>
+        <span>QUANT SCORING:</span>
+        <span class="text-[#ff9900] font-bold">0–100 PDF ENGINE</span>
+      </div>
+      <span class="text-slate-600">|</span>
+      <div>
+        <span>TIERS:</span>
+        <span class="text-[#00ff88]">BULL &gt; 70</span> / <span class="text-slate-400">NORM 50-70</span> / <span class="text-[#ff1744]">BEAR &lt; 50</span>
+      </div>
+      <span class="text-slate-600">|</span>
+      <div>
+        <span>LAYA AI:</span>
+        <span class="text-purple-400 font-bold">ModernBERT System 1</span>
+      </div>
+    </div>
+
+    <!-- Quick Export Actions -->
+    <div class="flex items-center space-x-2.5">
+      <button onclick="exportData()" class="px-2.5 py-1 rounded bg-[#0e1422] border border-[#1e2a3f] text-slate-300 hover:text-white hover:border-[#ff9900] text-[10px] transition-colors">
+        📥 EXPORT CSV
+      </button>
+      <button onclick="window.print()" class="px-2.5 py-1 rounded bg-[#ff9900]/20 border border-[#ff9900]/50 text-[#ffb000] font-bold text-[10px] hover:bg-[#ff9900] hover:text-black transition-all">
+        📷 SNAP TERMINAL
+      </button>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- 4. MODALS: STOCK DETAIL & SYMBOL SEARCH (CTRL+K)                      -->
+  <!-- ===================================================================== -->
+
+  <!-- Stock Inspection Modal -->
+  <div id="stockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md hidden select-none font-mono">
+    <div class="bg-[#070c16] border-2 border-cyan-400/70 rounded-xl p-5 max-w-2xl w-full mx-4 shadow-2xl relative glow-cyan max-h-[90vh] overflow-y-auto">
+      <button onclick="closeStockModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold px-2 py-0.5 rounded hover:bg-slate-800 transition">✕</button>
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div class="flex items-center space-x-3">
+          <div id="modalScoreBadge" class="w-12 h-12 rounded-lg bg-[#00ff88]/20 border border-[#00ff88] flex flex-col items-center justify-center font-mono">
+            <span class="text-[8px] text-[#00ff88] font-bold">SCORE</span>
+            <span id="modalScoreVal" class="text-sm font-black text-white">88</span>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 id="modalSymbol" class="text-xl font-black tracking-wider text-white">RELIANCE</h2>
+              <span id="modalTierBadge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-700">BULLISH</span>
+            </div>
+            <p id="modalName" class="text-xs text-slate-400">Reliance Industries Limited</p>
+          </div>
+        </div>
+        <div class="text-right mr-8">
+          <div id="modalPrice" class="text-lg font-extrabold text-white">₹1,192.40</div>
+          <div id="modalChg" class="text-xs font-bold text-[#00ff88]">+1.84%</div>
+        </div>
+      </div>
+
+      <!-- Technical Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-[10px]">
+        <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+          <div class="text-slate-500">VWAP</div>
+          <div id="modalVwap" class="text-white font-bold text-xs">₹1,184.20</div>
+        </div>
+        <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+          <div class="text-slate-500">WILDER RSI(14)</div>
+          <div id="modalRsi" class="text-cyan-400 font-bold text-xs">64.2</div>
+        </div>
+        <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+          <div class="text-slate-500">RVOL</div>
+          <div id="modalRvol" class="text-[#ffb000] font-bold text-xs">2.41x</div>
+        </div>
+        <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
+          <div class="text-slate-500">SUPERTREND</div>
+          <div id="modalSupertrend" class="text-emerald-400 font-bold text-xs">+1 BULLISH</div>
+        </div>
+      </div>
+
+      <!-- CPR & Pivot Levels -->
+      <div class="p-3 rounded bg-[#0a101d] border border-slate-800 mb-4 text-xs">
+        <div class="text-slate-400 font-bold text-[10px] mb-2 uppercase flex justify-between">
+          <span>CENTRAL PIVOT RANGE &amp; CAMARILLA LEVELS</span>
+          <span class="text-cyan-400">RESEARCH FORMULAS</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+          <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[9px]">CPR (TC / P / BC)</span>
+            <span id="modalCpr" class="text-white font-bold">1188 / 1184 / 1180</span>
+          </div>
+          <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[9px]">CAMARILLA (H3 / L3)</span>
+            <span id="modalCam" class="text-white font-bold">1196 / 1172</span>
+          </div>
+          <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+            <span class="text-slate-500 block text-[9px]">R:R RATIO GATE</span>
+            <span id="modalRr" class="text-[#ffb000] font-bold">1 : 2.4 (≥ 1.5)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Laya AI Decision Summary -->
+      <div class="p-3 rounded bg-gradient-to-r from-purple-950/40 to-slate-950 border border-purple-800/60 mb-4 text-xs">
+        <div class="flex items-center space-x-2 text-purple-400 font-bold text-[11px] mb-1">
+          <span>✦ LAYA AI QUANTITATIVE SYNTHESIS:</span>
+        </div>
+        <p id="modalLayaText" class="text-slate-300 text-[11px] leading-relaxed">
+          Order block accumulation confirmed above CPR Top Central (TC). Wilder RSI momentum expansion with 2.4x volume surge confirms valid long setup with R:R &gt;= 1.5.
+        </p>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="closeStockModal()" class="px-4 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold border border-slate-700 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Modal -->
+  <div id="searchModal" class="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/80 backdrop-blur-md hidden select-none font-mono">
+    <div class="bg-[#090e18] border-2 border-[#ff9900]/70 rounded-xl p-4 max-w-lg w-full mx-4 shadow-2xl text-xs">
+      <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 mb-3">
+        <span class="text-[#ff9900] text-sm font-bold">&gt;</span>
+        <input id="searchInput" type="text" placeholder="Search 2,613 symbols (e.g. RELIANCE, TCS, INFY)..." class="w-full bg-transparent text-white outline-none border-none placeholder-slate-500 text-sm font-bold" autofocus autocomplete="off"/>
+        <kbd class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">ESC</kbd>
+      </div>
+      <div id="searchResults" class="max-h-60 overflow-y-auto space-y-1">
+        <!-- Results populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 5. TERMINAL ENGINE SCRIPT                                             -->
+  <!-- ===================================================================== -->
+  <script>
+  (() => {
+    // Bloomberg Terminal Application State
+    const state = {
+      stocks: {},
+      stockList: [],
+      dailyRanking: [],
+      bestStock: null,
+      worstStock: null,
+      tiersSummary: { bullish_count: 0, bearish_count: 0, normal_count: 0 },
+      spotlightStock: null,
+      timeframe: '5',
+      sessionMode: 'auto',
+      audioEnabled: false,
+      audioCtx: null,
+      hoveredStock: null,
+      flowData: null
+    };
+
+    // Formatters
+    const fmtLevel = v => (typeof v === 'number' && isFinite(v)) ? `₹${v.toFixed(1)}` : '--';
+    const effChg = s => s.change_pct ?? s.open_change_pct ?? 0;
+    const effScore = s => s.quant_score ?? s.metrics?.score ?? 50;
+
+    // Web Audio Synthesizer for Terminal Cues
+    function playBeep(isBull = true) {
+      if (!state.audioEnabled) return;
+      try {
+        if (!state.audioCtx) state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+        const osc = state.audioCtx.createOscillator();
+        const gain = state.audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isBull ? 880 : 330, state.audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(isBull ? 1320 : 220, state.audioCtx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.03, state.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(state.audioCtx.destination);
+        osc.start();
+        osc.stop(state.audioCtx.currentTime + 0.04);
+      } catch (e) {}
+    }
+
+    // Audio Toggle
+    const audioBtn = document.getElementById('bbAudioToggle');
+    const audioIcon = document.getElementById('bbAudioIcon');
+    if (audioBtn) {
+      audioBtn.addEventListener('click', () => {
+        state.audioEnabled = !state.audioEnabled;
+        audioIcon.textContent = state.audioEnabled ? '🔊' : '🔇';
+        audioBtn.classList.toggle('border-[#ff9900]', state.audioEnabled);
+        audioBtn.classList.toggle('text-[#ff9900]', state.audioEnabled);
+        if (state.audioEnabled) playBeep(true);
+      });
+    }
+
+    // Realtime IST Clock Ticker
+    function updateClock() {
+      const clockEl = document.getElementById('bbClock');
+      if (!clockEl) return;
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const ist = new Date(utc + (3600000 * 5.5));
+      const pad = n => String(n).padStart(2, '0');
+      clockEl.textContent = `${pad(ist.getHours())}:${pad(ist.getMinutes())}:${pad(ist.getSeconds())}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Timeframe Buttons
+    document.querySelectorAll('.bb-tf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.bb-tf-btn').forEach(b => {
+          b.className = 'bb-tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white';
+        });
+        btn.className = 'bb-tf-btn px-2 py-0.5 rounded bg-[#ff9900]/20 text-[#ffb000] border border-[#ff9900]/50 font-bold';
+        state.timeframe = btn.getAttribute('data-tf') || '5';
+        fetchData();
+      });
+    });
+
+    // Fetch Schedule & Market Status
+    async function fetchSchedule() {
+      try {
+        const resp = await fetch('/api/market/schedule');
+        if (!resp.ok) return;
+        const sched = await resp.json();
+        
+        const stateEl = document.getElementById('bbMarketState');
+        const dotEl = document.getElementById('bbStatusDot');
+        const phraseEl = document.getElementById('bbCountdownPhrase');
+
+        if (stateEl) stateEl.textContent = sched.status_badge || sched.state;
+        if (dotEl) {
+          dotEl.className = sched.is_open ? 'w-2 h-2 rounded-full bg-emerald-400 bb-pulse' : 'w-2 h-2 rounded-full bg-[#ff9900]';
+        }
+        if (phraseEl) phraseEl.textContent = sched.phrase || (sched.is_open ? 'Open' : 'Closed');
+      } catch (e) {}
+    }
+
+    // Main Market Data Fetcher
+    async function fetchData() {
+      try {
+        const t0 = performance.now();
+        // Fetch market snapshot with fallback to previous session when market closed
+        let url = `/api/market?timeframe=${state.timeframe}`;
+        let resp = await fetch(url);
+        let data = await resp.json();
+
+        // If live returned empty or error, fallback to previous session automatically
+        if (!resp.ok || !data.stocks || Object.keys(data.stocks).length === 0) {
+          resp = await fetch(`/api/market?session=previous&timeframe=${state.timeframe}`);
+          data = await resp.json();
+        }
+
+        const latEl = document.getElementById('bbLatency');
+        if (latEl) latEl.textContent = `${Math.round(performance.now() - t0)} ms`;
+
+        state.stocks = data.stocks || {};
+        state.stockList = Object.values(state.stocks);
+        state.dailyRanking = data.daily_ranking || [];
+        state.bestStock = data.best_stock || (state.dailyRanking[0] ?? null);
+        state.worstStock = data.worst_stock || (state.dailyRanking[state.dailyRanking.length - 1] ?? null);
+        state.tiersSummary = data.tiers_summary || { bullish_count: 0, bearish_count: 0, normal_count: 0 };
+
+        // Set default spotlight
+        if (!state.spotlightStock && state.bestStock) {
+          state.spotlightStock = state.stocks[state.bestStock.symbol] || state.bestStock;
+        }
+
+        renderHeaderStats();
+        renderFloatingHud();
+        renderLongBuildup();
+        renderShortBuildup();
+
+        fetchFlowTrajectories();
+      } catch (err) {
+        console.warn('Market fetch error:', err);
+      }
+    }
+
+    // Render Header & Spectrum Stats
+    function renderHeaderStats() {
+      const stocks = state.stockList;
+      if (stocks.length === 0) return;
+
+      let adv = 0, dec = 0;
+      stocks.forEach(s => {
+        if (effChg(s) >= 0) adv++; else dec++;
+      });
+      const total = adv + dec || 1;
+      const bullPct = Math.round((adv / total) * 100);
+      const bearPct = 100 - bullPct;
+
+      const bullRatEl = document.getElementById('bbBullRatio');
+      const bearRatEl = document.getElementById('bbBearRatio');
+      const bullBarEl = document.getElementById('bbBullBar');
+      const bearBarEl = document.getElementById('bbBearBar');
+
+      if (bullRatEl) bullRatEl.textContent = `${bullPct}%`;
+      if (bearRatEl) bearRatEl.textContent = `${bearPct}%`;
+      if (bullBarEl) bullBarEl.style.width = `${bullPct}%`;
+      if (bearBarEl) bearBarEl.style.width = `${bearPct}%`;
+    }
+
+    // Render Floating HUD
+    function renderFloatingHud() {
+      const s = state.spotlightStock || state.bestStock || state.stockList[0];
+      if (!s) return;
+
+      const symEl = document.getElementById('hudSymbol');
+      const scoreEl = document.getElementById('hudScore');
+      const pvEl = document.getElementById('hudPriceVwap');
+      const rvEl = document.getElementById('hudRvolVol');
+      const obEl = document.getElementById('hudObZone');
+      const tagEl = document.getElementById('hudZoneTag');
+      const layaEl = document.getElementById('hudLayaBadge');
+      const inspectBtn = document.getElementById('hudInspectBtn');
+
+      const score = effScore(s);
+      const isBull = score >= 70 || effChg(s) >= 0;
+
+      if (symEl) symEl.innerHTML = `${s.symbol} <span class="w-1.5 h-1.5 rounded-full ${isBull ? 'bg-[#00ff88]' : 'bg-[#ff1744]'} animate-ping"></span>`;
+      if (scoreEl) {
+        scoreEl.className = `${isBull ? 'text-[#00ff88]' : 'text-[#ff1744]'} font-extrabold tracking-wide`;
+        scoreEl.textContent = `${score.toFixed(1)} / 100 [${s.tier || (score >= 70 ? 'BULLISH' : score < 50 ? 'BEARISH' : 'NORMAL')}]`;
+      }
+      if (pvEl) {
+        pvEl.innerHTML = `₹${(s.price || 0).toFixed(1)} <span class="text-[#ffb000] text-[9px]">(VWAP: ${s.vwap ? s.vwap.toFixed(1) : '--'})</span>`;
+      }
+      if (rvEl) {
+        rvEl.textContent = `${(s.rvol || 1).toFixed(2)}x · VOL ${(((s.volume || 0)) / 100000).toFixed(1)}L`;
+      }
+      if (obEl) {
+        if (s.cpr) {
+          obEl.textContent = `CPR [${s.cpr.tc?.toFixed(1)} - ${s.cpr.bc?.toFixed(1)}] · P: ${s.cpr.pivot?.toFixed(1)}`;
+        } else {
+          obEl.textContent = `OB ZONE [${fmtLevel(s.support)} - ${fmtLevel(s.resistance)}]`;
         }
       }
-    }
-  </script>
-<!-- BEGIN: Custom Terminal Cyber Styles -->
-<style data-purpose="cyber-glow-and-grid">
-    body {
-      background-color: #03050a;
-      color: #94a3b8;
-      font-family: 'JetBrains Mono', monospace;
-      overflow-x: hidden;
-    }
-    
-    /* CRT Scanline Effect Overlay */
-    .scanlines {
-      background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.25) 50%
-      ), linear-gradient(
-        90deg,
-        rgba(255, 0, 0, 0.03),
-        rgba(0, 255, 0, 0.01),
-        rgba(0, 0, 255, 0.03)
-      );
-      background-size: 100% 3px, 6px 100%;
-      pointer-events: none;
-    }
-
-    /* Terminal HUD Grid Lines */
-    .bg-grid {
-      background-size: 32px 32px;
-      background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    }
-
-    /* Neon Glow Filters */
-    .glow-green {
-      filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.65));
-    }
-    .glow-red {
-      filter: drop-shadow(0 0 6px rgba(255, 23, 68, 0.65));
-    }
-    .glow-cyan {
-      filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7));
-    }
-    .glow-amber {
-      filter: drop-shadow(0 0 4px rgba(255, 171, 0, 0.6));
-    }
-
-    /* Custom Micro Scrollbars */
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #04070d;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #152238;
-      border-radius: 2px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #00e5ff;
-    }
-  </style>
-<style data-purpose="hud-brackets">
-    .hud-box {
-      position: relative;
-    }
-    .hud-box::before {
-      content: '';
-      position: absolute;
-      top: -1px; left: -1px;
-      width: 8px; height: 8px;
-      border-top: 2px solid #00ff88;
-      border-left: 2px solid #00ff88;
-      pointer-events: none;
-    }
-    .hud-box::after {
-      content: '';
-      position: absolute;
-      bottom: -1px; right: -1px;
-      width: 8px; height: 8px;
-      border-bottom: 2px solid #00ff88;
-      border-right: 2px solid #00ff88;
-      pointer-events: none;
-    }
-    .hud-box-red::before {
-      border-top-color: #ff1744;
-      border-left-color: #ff1744;
-    }
-    .hud-box-red::after {
-      border-bottom-color: #ff1744;
-      border-right-color: #ff1744;
-    }
-  </style>
-<!-- END: Custom Terminal Cyber Styles -->
-</head>
-<body class="w-full min-h-screen bg-void text-slate-300 antialiased relative selection:bg-cyanLaser selection:text-black">
-<!-- Fixed Scanline & Grid Layer -->
-<div class="fixed inset-0 scanlines z-50 pointer-events-none opacity-40"></div>
-<div class="fixed inset-0 bg-grid pointer-events-none z-0"></div>
-<!-- BEGIN: MainContainer -->
-<div class="relative z-10 flex flex-col min-h-screen border border-slate-900 mx-auto max-w-[1920px] shadow-2xl">
-<!-- BEGIN: TopHeader -->
-<header class="border-b border-surfaceBorder bg-[#050812]/90 backdrop-blur px-4 py-2 flex flex-wrap items-center justify-between gap-4 select-none" data-purpose="terminal-header">
-<!-- Left: Terminal Branding & Ticker -->
-<div class="flex items-center space-x-6">
-<div class="flex items-center space-x-2">
-<div class="w-2.5 h-2.5 rounded-sm bg-bull animate-ping"></div>
-<span class="text-xs font-black tracking-widest text-slate-100 uppercase">AURA QUANT // TERMINAL v4.8</span>
-<span class="text-[10px] px-1.5 py-0.5 rounded bg-bull/10 text-bull border border-bull/30 font-bold">LIVE · YAHOO FINANCE</span>
-</div>
-<div class="h-4 w-[1px] bg-slate-800"></div>
-<!-- NSE Benchmark Quick Ticker -->
-<div class="flex items-center space-x-4 text-xs">
-<div>
-<span class="text-slate-400 font-semibold">TRACKED UNIVERSE:</span>
-<span class="text-white font-bold tracking-wider ml-1" id="trackedCount">--</span>
-<span class="text-bull font-bold ml-1 text-[11px]" id="advCount">ADV --</span>
-<span class="text-bear font-bold ml-1 text-[11px]" id="decCount">DEC --</span>
-</div>
-
-</div>
-</div>
-<!-- Center: Mini Breadth / Flow Sentiment Bar as seen in Reference Images -->
-<div class="flex items-center space-x-3 bg-black/60 px-3 py-1 rounded-md border border-slate-800 text-[10px]">
-<div class="flex items-center space-x-1 text-bull font-bold">
-<span class="text-[9px]">▲</span>
-<span>BULLISH</span>
-<span id="breadthBullPct" class="bg-bull/20 text-bull px-1 rounded text-[9px]">--%</span>
-</div>
-<!-- Mini Sentiment Histogram Spectrum -->
-<div class="w-36 h-2 bg-slate-900 rounded-sm overflow-hidden flex items-center p-0.5 space-x-0.5">
-<div id="breadthBullBar" class="h-full bg-bull rounded-sm glow-green" style="width: 50%;"></div>
-<div id="breadthBearBar" class="h-full bg-bear rounded-sm glow-red" style="width: 50%;"></div>
-</div>
-<div class="flex items-center space-x-1 text-bear font-bold">
-<span id="breadthBearPct" class="bg-bear/20 text-bear px-1 rounded text-[9px]">--%</span>
-<span>BEARISH</span>
-<span class="text-[9px]">▼</span>
-</div>
-</div>
-<!-- Right: Telemetry Time & Latency -->
-<div class="flex items-center space-x-4 text-xs font-mono">
-<div class="text-[11px] text-slate-400 flex items-center space-x-1">
-<span class="inline-block w-1.5 h-1.5 rounded-full bg-cyanLaser"></span>
-<span>FEED RTT:</span>
-<span class="text-cyanLaser font-bold" id="coloLatency">--</span>
-</div>
-<div class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-slate-200 font-semibold">
-<span id="istClock">--:--:--</span> <span class="text-[9px] text-slate-500 uppercase">IST</span>
-</div>
-</div>
-</header>
-<!-- END: TopHeader -->
-<!-- BEGIN: MainTerminalSplitView -->
-<main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-0 relative bg-[#03060c] overflow-hidden">
-<!-- ============================================================== -->
-<!-- LEFT PANE: DIRECTIONAL TRAJECTORY FLOW CANVAS (~45% width: 5.5 cols) -->
-<!-- ============================================================== -->
-<section class="xl:col-span-5 border-r border-surfaceBorder relative flex flex-col min-h-[780px] bg-[#020409]" data-purpose="trajectory-canvas-section">
-<!-- Canvas Top Subheader Controls -->
-<div class="px-4 py-2 border-b border-surfaceBorder/80 flex items-center justify-between text-[11px] bg-[#040813]">
-<div class="flex items-center space-x-3">
-<span class="text-cyanLaser font-bold tracking-wider uppercase flex items-center gap-1.5">
-<span class="w-1.5 h-1.5 rounded-full bg-cyanLaser animate-pulse"></span>
-              FLOW ACCUMULATION &amp; TRAJECTORY FIELD
-            </span>
-<span class="text-slate-500 text-[10px]">| SESSION % FROM OPEN</span>
-</div>
-<div class="flex items-center space-x-2 text-[10px] text-slate-400">
-<span class="px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700">1-MIN CANDLES · POLL 5s</span>
-
-</div>
-</div>
-<!-- Canvas Body with Y-Axis, Left Indicator Rail, SVG Flow and Floating HUD -->
-<div class="relative flex-1 w-full overflow-hidden flex">
-<!-- Y-Axis Scale Rail (Vertical) -->
-<div class="w-12 border-r border-slate-900/80 flex flex-col justify-between py-6 text-[9px] font-mono text-slate-500 select-none text-right pr-2 z-20 bg-[#03050a]/90 backdrop-blur-sm">
-<div class="text-bull/80 font-semibold">+3.0</div>
-<div class="text-bull/70">+2.0</div>
-<div class="text-bull/70 font-bold">+1.0</div>
-<div class="text-bull/80">+0.5</div>
-<!-- Zero Line Mark -->
-<div class="text-white font-bold text-[10px] bg-slate-800/80 px-1 rounded border border-slate-600">0.0</div>
-<div class="text-bear/80">-0.5</div>
-<div class="text-bear/80 font-bold">-1.0</div>
-<div class="text-bear/70">-2.0</div>
-<div class="text-bear/80 font-semibold">-3.0</div>
-</div>
-<!-- Left Mini Data Ribbon (blurred badges resembling reference image) -->
-<div class="w-20 hidden sm:flex flex-col justify-around py-4 pl-1 text-[8px] z-10 border-r border-slate-900/40 select-none">
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">AVG RVOL</div>
-<div class="font-bold text-bull text-[9px]" id="railAvgRvol">--</div>
-</div>
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">ADV</div>
-<div class="font-bold text-slate-300" id="railAdv">--</div>
-</div>
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">DEC</div>
-<div class="font-bold text-bear" id="railDec">--</div>
-</div>
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">TOP GAINER</div>
-<div class="font-bold text-bull" id="railTopGainer">--</div>
-</div>
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">TOP LOSER</div>
-<div class="font-bold text-amberGold" id="railTopLoser">--</div>
-</div>
-<div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">AVG CHG</div>
-<div class="font-bold text-bull" id="railAvgChg">--</div>
-</div>
-</div>
-<!-- Central Canvas Field (SVG Multi-Trajectory Swarm) -->
-<div class="relative flex-1 h-full w-full overflow-hidden bg-void">
-<!-- SVG Quantum Trajectory Flow Chart -->
-<canvas id="trajCanvas" class="absolute inset-0 w-full h-full"></canvas>
-<!-- FLOATING HUD ORDER BLOCK TERMINAL CARD (Exact Replica from IMAGE_12) -->
-<div class="absolute top-[20%] left-[20%] sm:left-[26%] w-72 sm:w-84 bg-[#061118]/95 border-2 border-bull/70 rounded-xl p-3.5 shadow-2xl backdrop-blur-md z-30 glow-green" data-purpose="floating-order-block-card">
-  <!-- Card Top Header with Sparkline -->
-  <div class="flex items-center justify-between border-b border-bull/30 pb-2 mb-2.5">
-    <div class="flex items-center space-x-2">
-      <div class="w-3.5 h-3.5 rounded bg-bull/20 border border-bull flex items-center justify-center">
-        <div class="w-1.5 h-1.5 bg-bull rounded-full"></div>
-      </div>
-      <div>
-        <h3 class="text-xs font-black tracking-wide text-white uppercase flex items-center gap-1.5">
-          ORDER BLOCK TERMINAL
-          <span class="text-[8px] bg-bull/20 text-bull px-1 py-0.2 rounded border border-bull/40">L-ZONE</span>
-        </h3>
-      </div>
-    </div>
-    <!-- Mini Trend Sparkline in Card Header -->
-    <svg class="w-14 h-5" viewBox="0 0 60 20">
-      <polyline id="spotlightSparkline" fill="none" points="0,15 15,14 25,8 38,10 48,3 60,1" stroke="#00ff88" stroke-width="1.5"></polyline>
-    </svg>
-  </div>
-
-  <!-- Terminal Telemetry Attributes / Matrix Rows -->
-  <div class="space-y-1.5 text-[10px] font-mono">
-    <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
-      <span class="text-slate-400 font-semibold tracking-wider">SPOTLIGHT</span>
-      <span id="spotlightSymbol" class="text-white font-extrabold flex items-center gap-1 text-[11px]">
-        ASIANPAINT
-        <span class="w-1.5 h-1.5 rounded-full bg-bull animate-ping"></span>
-      </span>
-    </div>
-    <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
-      <span class="text-slate-400 font-semibold tracking-wider">COMPOSITE SCORE</span>
-      <span id="spotlightScore" class="text-bull font-extrabold tracking-wide">91 / 100 [BULL ACCUM]</span>
-    </div>
-    <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
-      <span class="text-slate-400 font-semibold tracking-wider">PRICE / VWAP</span>
-      <span id="spotlightPriceVwap" class="text-white font-bold">₹2,307.00 <span class="text-amberGold text-[9px]">(VWAP: 2,295.40)</span></span>
-    </div>
-    <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
-      <span class="text-slate-400 font-semibold tracking-wider">RVOL / VOLUME</span>
-      <span id="spotlightDeltaRvol" class="text-cyanLaser font-bold">--</span>
-    </div>
-    <div class="flex justify-between items-center py-0.5">
-      <span class="text-slate-400 font-semibold tracking-wider">ACTIVE OB ZONE</span>
-      <span id="spotlightZone" class="text-bull font-bold uppercase text-[9px]">DEMAND OB [2,280 - 2,295]</span>
-    </div>
-  </div>
-
-  <!-- Interactive Action Button -->
-  <div class="mt-3 pt-2.5 border-t border-slate-800/90 flex items-center justify-between">
-    <div class="flex items-center space-x-1 text-slate-400 text-[10px] font-semibold">
-      <span class="w-1.5 h-1.5 rounded-full bg-emeraldGlow animate-pulse"></span>
-      <span id="spotlightSetupAction">BREAKOUT CONFIRMED</span>
-    </div>
-    <button id="spotlightInspectBtn" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-black font-extrabold text-[10px] px-3 py-1 rounded shadow-md transition-all flex items-center space-x-1 cursor-pointer">
-      <span>Inspect Order Blocks</span>
-      <span>→</span>
-    </button>
-  </div>
-
-  <!-- Pointer crossline anchor label -->
-  <div class="absolute -bottom-6 left-6 px-2 py-0.5 bg-black/90 text-[9px] font-mono text-slate-300 border border-slate-700 rounded shadow">
-    Quantitative SMC Level
-  </div>
-</div>
-<!-- Time Stamp Labels X-Axis at bottom -->
-<div class="absolute bottom-2 left-4 right-4 flex justify-between text-[9px] font-mono text-slate-500 select-none border-t border-slate-800/60 pt-1">
-  <span>09:15 OPEN</span>
-  <span>11:30 MID</span>
-  <span>13:45 FLOW</span>
-  <span class="text-cyanLaser font-bold bg-cyanLaser/10 px-1 rounded">15:30 CLOSE</span>
-</div>
-</div>
-</div>
-</section>
-<!-- END: Trajectory Canvas Left Pane -->
-<!-- ============================================================== -->
-<!-- RIGHT PANE: DUAL BUILD-UP MATRIX & HERO CARDS (~55% width: 7 cols) -->
-<!-- ============================================================== -->
-<section class="xl:col-span-7 flex flex-col min-h-[780px] bg-[#02050b]" data-purpose="matrix-and-hero-section">
-<!-- ========================================================== -->
-<!-- TOP HALF: LONG BUILD-UP MATRIX & BULLISH HERO PANELS       -->
-<!-- ========================================================== -->
-<div class="flex-1 border-b-2 border-surfaceBorder/90 p-3 bg-gradient-to-b from-[#03150d]/40 via-[#020907] to-transparent flex flex-col justify-between" data-purpose="long-buildup-half">
-<!-- Long Buildup Section Header -->
-<div class="flex items-center justify-between mb-2 pb-1 border-b border-bull/20">
-  <div class="flex items-center space-x-2">
-    <span class="w-2.5 h-2.5 bg-bull rounded-sm glow-green"></span>
-    <h2 class="text-xs font-black tracking-widest text-bull uppercase">LONG BUILD-UP MATRIX // BULLISH FLOW</h2>
-    
-  </div>
-  <div class="text-[10px] text-slate-400 font-mono">
-    BULLISH TRACKED: <span id="longBuildupTotalOi" class="text-bull font-bold">--</span>
-  </div>
-</div>
-
-<!-- Top Half Split: 8 Dynamic Grid Cards on Left + 3 Hero Bull Cards on Right -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 flex-1 items-stretch">
-  <!-- 8 Dense Long Build-up Micro Cards -->
-  <div id="longBuildupGrid" class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-    <!-- Populated dynamically by matrix engine -->
-  </div>
-
-  <!-- 3 Stacked Right-side Hero Bullish Analysis Cards -->
-  <div id="longHeroCards" class="lg:col-span-5 flex flex-col justify-between space-y-2">
-    <!-- Populated dynamically by matrix engine -->
-  </div>
-</div>
-</div>
-<!-- END: Top Half Long Buildup -->
-<!-- ========================================================== -->
-<!-- BOTTOM HALF: SHORT BUILD-UP MATRIX & BEARISH HERO PANELS   -->
-<!-- ========================================================== -->
-<div class="flex-1 p-3 bg-gradient-to-b from-[#180408]/40 via-[#0a0204] to-transparent flex flex-col justify-between" data-purpose="short-buildup-half">
-<!-- Short Buildup Section Header -->
-<div class="flex items-center justify-between mb-2 pb-1 border-b border-bear/20">
-  <div class="flex items-center space-x-2">
-    <span class="w-2.5 h-2.5 bg-bear rounded-sm glow-red"></span>
-    <h2 class="text-xs font-black tracking-widest text-bear uppercase">SHORT BUILD-UP MATRIX // BEARISH FLOW</h2>
-    
-  </div>
-  <div class="text-[10px] text-slate-400 font-mono">
-    BEARISH TRACKED: <span id="shortBuildupTotalOi" class="text-bear font-bold">--</span>
-  </div>
-</div>
-
-<!-- Bottom Half Split: 8 Dense Short Build-up Micro Cards + 3 Hero Bear Cards -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 flex-1 items-stretch">
-  <!-- 8 Dense Short Build-up Micro Cards -->
-  <div id="shortBuildupGrid" class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-    <!-- Populated dynamically by matrix engine -->
-  </div>
-
-  <!-- 3 Hero Bear Cards on Right -->
-  <div id="shortHeroCards" class="lg:col-span-5 flex flex-col justify-between space-y-2">
-    <!-- Populated dynamically by matrix engine -->
-  </div>
-</div>
-</div>
-<!-- END: Bottom Half Short Buildup -->
-</section>
-<!-- END: Matrix and Hero Section Right Pane -->
-</main>
-<!-- END: MainTerminalSplitView -->
-<!-- BEGIN: TerminalFooterTelemetry -->
-<footer class="border-t border-surfaceBorder bg-[#040711] px-4 py-2 flex flex-wrap items-center justify-between text-[11px] font-mono select-none text-slate-400 gap-3" data-purpose="telemetry-footer">
-  <!-- Algo Diagnostics -->
-  <div class="flex items-center space-x-5">
-    <div class="flex items-center space-x-1.5">
-      <span class="w-2 h-2 rounded-full bg-bull animate-pulse"></span>
-      <span id="footerSyncStatus" class="text-slate-300 font-semibold">LIVE FEED · YAHOO FINANCE 1-MIN CANDLES</span>
-    </div>
-    <div class="hidden sm:inline-block text-slate-600">|</div>
-    <div class="hidden sm:flex items-center space-x-1">
-      <span>AVG CHANGE:</span>
-      <span id="footerAggregateDelta" class="text-bull font-bold">--</span>
-    </div>
-    <div class="hidden md:inline-block text-slate-600">|</div>
-    <div class="hidden md:flex items-center space-x-1">
-      <span>BREADTH:</span>
-      <span id="footerPcrRatio" class="text-amberGold font-bold">--</span>
-    </div>
-    <div class="hidden xl:inline-block text-slate-600">|</div>
-    <div class="hidden xl:flex items-center space-x-1">
-      <span>TRACKED STOCKS:</span>
-      <span id="footerTrackedCount" class="text-cyanLaser font-bold">--</span>
-    </div>
-  </div>
-
-  <!-- Quick Interactive Actions -->
-  <div class="flex items-center space-x-3">
-    <span class="text-[10px] text-slate-500">POLL: 5s</span>
-    <button id="exportCsvBtn" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyanLaser text-slate-300 text-[10px] transition-colors flex items-center gap-1 cursor-pointer">
-      <span>📥</span>
-      <span>EXPORT CSV</span>
-    </button>
-    <button id="snapTerminalBtn" class="px-3 py-1 rounded bg-bull/20 border border-bull/60 text-bull font-bold text-[10px] hover:bg-bull hover:text-black transition-all flex items-center gap-1 cursor-pointer">
-      <span>📷</span>
-      <span>SNAP TERMINAL</span>
-    </button>
-  </div>
-</footer>
-<!-- END: TerminalFooterTelemetry -->
-</div>
-<!-- END: MainContainer -->
-
-<!-- ============================================================== -->
-<!-- INTERACTIVE MODALS (STOCK DETAIL, SEARCH, SNAPSHOT REPORT)      -->
-<!-- ============================================================== -->
-
-<!-- 1. Stock Order Block Inspection Modal -->
-<div id="stockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md hidden select-none">
-  <div class="bg-[#060b15] border-2 border-cyanLaser/70 rounded-xl p-5 max-w-2xl w-full mx-4 shadow-2xl relative glow-cyan max-h-[90vh] overflow-y-auto">
-    <!-- Close button -->
-    <button id="closeStockModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg font-bold px-2 py-0.5 rounded hover:bg-slate-800 transition">✕</button>
-    
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-      <div class="flex items-center space-x-3">
-        <div id="modalScoreBadge" class="w-10 h-10 rounded-lg bg-bull/20 border border-bull flex flex-col items-center justify-center font-mono">
-          <span class="text-[8px] text-bull font-bold">SCORE</span>
-          <span id="modalScoreVal" class="text-xs font-black text-white">88</span>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <h2 id="modalSymbol" class="text-lg font-black tracking-wider text-white font-mono">RELIANCE</h2>
-            <span id="modalSector" class="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 font-mono">Energy / Oil</span>
-          </div>
-          <p id="modalName" class="text-xs text-slate-400">Reliance Industries Limited</p>
-        </div>
-      </div>
-      <div class="text-right font-mono mr-8">
-        <div id="modalPrice" class="text-base font-bold text-white">₹1,190.00</div>
-        <div id="modalChg" class="text-xs font-bold text-bull">+0.46%</div>
-      </div>
-    </div>
-
-    <!-- Technical Metrics Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 font-mono text-[10px]">
-      <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
-        <div class="text-slate-500">VWAP</div>
-        <div id="modalVwap" class="text-white font-bold text-xs">₹1,180.35</div>
-      </div>
-      <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
-        <div class="text-slate-500">RSI (14)</div>
-        <div id="modalRsi" class="text-cyanLaser font-bold text-xs">58.1</div>
-      </div>
-      <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
-        <div class="text-slate-500">RVOL</div>
-        <div id="modalRvol" class="text-amberGold font-bold text-xs">2.05x</div>
-      </div>
-      <div class="p-2 rounded bg-slate-900/80 border border-slate-800">
-        <div class="text-slate-500">DAY RANGE</div>
-        <div id="modalRange" class="text-slate-300 font-bold text-xs">1,174 - 1,192</div>
-      </div>
-    </div>
-
-    <!-- Trade Setup / Execution Plan -->
-    <div class="p-3 rounded-lg bg-gradient-to-r from-[#071321] to-[#04120b] border border-bull/30 mb-4 font-mono text-xs">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-bull font-bold tracking-wider uppercase flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-bull animate-ping"></span>
-          ALGORITHMIC ORDER BLOCK SETUP
-        </span>
-        <span id="modalAction" class="px-2 py-0.5 rounded bg-bull/20 text-bull font-bold text-[10px] border border-bull/40">BREAKOUT LONG</span>
-      </div>
-      <div class="grid grid-cols-3 gap-2 text-[11px] text-center pt-1 border-t border-slate-800/80">
-        <div>
-          <span class="text-slate-500 block text-[9px]">STOP LOSS</span>
-          <span id="modalSl" class="text-bear font-bold">₹1,172.50</span>
-        </div>
-        <div>
-          <span class="text-slate-500 block text-[9px]">TARGET 1</span>
-          <span id="modalT1" class="text-bull font-bold">₹1,215.00</span>
-        </div>
-        <div>
-          <span class="text-slate-500 block text-[9px]">RISK : REWARD</span>
-          <span id="modalRr" class="text-amberGold font-bold">1 : 2.4</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detected Order Blocks List -->
-    <div class="mb-4">
-      <div class="text-xs font-bold text-slate-300 font-mono mb-2 uppercase flex items-center justify-between">
-        <span>Detected Order Blocks (SMC / Liquidity Levels)</span>
-        <span id="modalObCount" class="text-[10px] text-slate-500">4 Active Zones</span>
-      </div>
-      <div id="modalObList" class="space-y-1.5 max-h-40 overflow-y-auto font-mono text-[10px]">
-        <!-- Dynamic rows populated by JS -->
-      </div>
-    </div>
-
-    <!-- Modal Actions -->
-    <div class="flex items-center justify-between pt-3 border-t border-slate-800">
-      <button id="modalSpotlightSelectBtn" class="px-3 py-1.5 rounded bg-cyanLaser/20 border border-cyanLaser/60 text-cyanLaser font-mono text-xs font-bold hover:bg-cyanLaser hover:text-black transition">
-        ⚡ Spotlight on Terminal HUD
-      </button>
-      <button id="modalCloseActionBtn" class="px-4 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs hover:bg-slate-800 transition">
-        Close
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- 2. Global Symbol Search Modal (Ctrl+K) -->
-<div id="searchModal" class="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/80 backdrop-blur-md hidden select-none">
-  <div class="bg-[#070d18] border border-cyanLaser/50 rounded-xl p-4 max-w-lg w-full mx-4 shadow-2xl font-mono text-xs">
-    <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 mb-3">
-      <span class="text-cyanLaser text-sm">🔍</span>
-      <input id="searchInput" type="text" placeholder="Search 2,613 symbols (e.g. RELIANCE, TCS, HDFC)..." class="w-full bg-transparent text-white outline-none border-none placeholder-slate-500 text-sm" autofocus autocomplete="off"/>
-      <kbd class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">ESC to close</kbd>
-    </div>
-    <div id="searchResults" class="space-y-1 max-h-72 overflow-y-auto">
-      <!-- Search items populated dynamically -->
-    </div>
-  </div>
-</div>
-
-<!-- 3. Terminal Snapshot Report Modal -->
-<div id="snapshotModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md hidden select-none">
-  <div class="bg-[#060b15] border-2 border-bull/60 rounded-xl p-5 max-w-2xl w-full mx-4 shadow-2xl relative max-h-[85vh] overflow-y-auto font-mono text-xs">
-    <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-      <div class="flex items-center space-x-2">
-        <span class="text-bull text-base">📷</span>
-        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Quant Order Block Terminal Snapshot Report</h3>
-      </div>
-      <button id="closeSnapshotModalBtn" class="text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800">✕</button>
-    </div>
-    <textarea id="snapshotText" readonly class="w-full h-80 bg-slate-950 border border-slate-800 rounded p-3 text-[11px] text-slate-300 font-mono focus:outline-none resize-none leading-relaxed"></textarea>
-    <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-800">
-      <span id="copySnapshotFeedback" class="text-[10px] text-bull font-bold opacity-0 transition-opacity">Copied to clipboard!</span>
-      <div class="flex items-center space-x-2">
-        <button id="copySnapshotBtn" class="px-3 py-1.5 rounded bg-bull/20 border border-bull/60 text-bull font-bold hover:bg-bull hover:text-black transition">
-          📋 Copy Report
-        </button>
-        <button id="downloadSnapshotBtn" class="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:bg-slate-800 transition">
-          💾 Download .MD
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- QUANTITATIVE MATRIX REALTIME CLIENT ENGINE                      -->
-<!-- ============================================================== -->
-<script id="matrix-engine">
-(() => {
-  // Terminal State
-  const state = {
-    stocks: {},
-    stockList: [],
-    signalTiles: { buy: [], sell: [] },
-    spotlightStock: null,
-    timeframe: '1',
-    audioEnabled: false,
-    lastTickTime: Date.now(),
-    searchQuery: '',
-    audioCtx: null
-  };
-
-  // Sound Synthesizer (Web Audio API subtle terminal audio cues)
-  function playTickSound(isBull = true) {
-    if (!state.audioEnabled) return;
-    try {
-      if (!state.audioCtx) {
-        state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (tagEl) {
+        tagEl.textContent = isBull ? 'DEMAND OB' : 'SUPPLY OB';
+        tagEl.className = `text-[8px] ${isBull ? 'bg-[#00ff88]/20 text-[#00ff88] border-[#00ff88]/40' : 'bg-[#ff1744]/20 text-[#ff1744] border-[#ff1744]/40'} px-1 rounded border`;
       }
-      if (state.audioCtx.state === 'suspended') {
-        state.audioCtx.resume();
+      if (layaEl) {
+        layaEl.textContent = isBull ? '✓ Laya AI: Confirmed Accumulation' : '✓ Laya AI: Confirmed Distribution';
+        layaEl.className = `text-[9px] ${isBull ? 'text-emerald-400' : 'text-rose-400'} font-semibold`;
       }
-      const osc = state.audioCtx.createOscillator();
-      const gain = state.audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(isBull ? 880 : 330, state.audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(isBull ? 1320 : 220, state.audioCtx.currentTime + 0.05);
-      gain.gain.setValueAtTime(0.04, state.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.05);
-      osc.connect(gain);
-      gain.connect(state.audioCtx.destination);
-      osc.start();
-      osc.stop(state.audioCtx.currentTime + 0.05);
-    } catch (e) {
-      // Audio autoplay policy fallback
-    }
-  }
-
-  // Setup Sound Toggle Button
-  const soundBtn = document.getElementById('soundToggleBtn');
-  const soundIcon = document.getElementById('soundIcon');
-  if (soundBtn) {
-    soundBtn.addEventListener('click', () => {
-      state.audioEnabled = !state.audioEnabled;
-      soundIcon.textContent = state.audioEnabled ? '🔊' : '🔇';
-      soundBtn.classList.toggle('text-cyanLaser', state.audioEnabled);
-      if (state.audioEnabled) playTickSound(true);
-    });
-  }
-
-  // Timeframe Buttons
-  document.querySelectorAll('.tf-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.tf-btn').forEach(b => {
-        b.className = 'tf-btn px-1.5 py-0.5 rounded text-slate-400 hover:text-white';
-      });
-      btn.className = 'tf-btn px-1.5 py-0.5 rounded bg-bull/20 text-bull font-bold border border-bull/40';
-      state.timeframe = btn.getAttribute('data-tf') || '5';
-      fetchMarketData();
-    });
-  });
-
-  // IST Clock Realtime Ticker
-  function updateClock() {
-    const clockEl = document.getElementById('istClock');
-    if (!clockEl) return;
-    const now = new Date();
-    // Offset for IST UTC+5:30
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const ist = new Date(utc + (3600000 * 5.5));
-    const pad = (n) => String(n).padStart(2, '0');
-    clockEl.textContent = `${pad(ist.getHours())}:${pad(ist.getMinutes())}:${pad(ist.getSeconds())}`;
-    
-  }
-  setInterval(updateClock, 1000);
-
-  // Main Fetch Loop
-  async function fetchMarketData() {
-    try {
-      const t0 = performance.now();
-      const resp = await fetch(`/api/market?mode=live&timeframe=${state.timeframe}`);
-      if (!resp.ok) return;
-      const data = await resp.json();
-      const rttEl = document.getElementById('coloLatency');
-      if (rttEl) rttEl.textContent = `${Math.round(performance.now() - t0)} ms`;
-      fetchFlowTrajectories();
-
-      state.stocks = data.stocks || {};
-      state.stockList = Object.values(state.stocks);
-      state.signalTiles = data.signal_tiles || { buy: [], sell: [] };
-
-      // Set default spotlight stock if not set
-      if (!state.spotlightStock && state.stockList.length > 0) {
-        state.spotlightStock = state.signalTiles.buy?.[0] ? state.stocks[state.signalTiles.buy[0].symbol] : state.stockList[0];
-      }
-
-      renderHeader(data);
-      renderSpotlight();
-      renderRailIndicators(data);
-      renderLongBuildup();
-      renderShortBuildup();
-      renderFooterTelemetry(data);
-
-      playTickSound(true);
-    } catch (e) {
-      console.warn('Market fetch error:', e);
-    }
-  }
-
-  // 1. Render Header
-  function renderHeader(data) {
-    const stocks = state.stockList;
-    if (stocks.length === 0) return;
-
-    // Approximate NIFTY & BANKNIFTY from top weighted stocks or indices
-    const reliance = state.stocks['RELIANCE'] || stocks[0];
-    const hdfc = state.stocks['HDFCBANK'] || stocks[1] || stocks[0];
-
-    const niftyPriceEl = document.getElementById('niftyPrice');
-    const niftyChgEl = document.getElementById('niftyChg');
-    const niftyVwapEl = document.getElementById('niftyVwap');
-    const bnfPriceEl = document.getElementById('bankniftyPrice');
-    const bnfChgEl = document.getElementById('bankniftyChg');
-
-    // Breadth calculation
-    let advances = 0, declines = 0;
-    stocks.forEach(s => {
-      const eff = s.change_pct ?? s.open_change_pct;
-      if (eff === null || eff === undefined) return;
-      if (eff >= 0) advances++;
-      else declines++;
-    });
-    const total = advances + declines || 1;
-    const bullPct = Math.round((advances / total) * 100);
-    const bearPct = 100 - bullPct;
-
-    const bBullPctEl = document.getElementById('breadthBullPct');
-    const bBearPctEl = document.getElementById('breadthBearPct');
-    const bBullBarEl = document.getElementById('breadthBullBar');
-    const bBearBarEl = document.getElementById('breadthBearBar');
-
-    if (bBullPctEl) bBullPctEl.textContent = `${bullPct}%`;
-    if (bBearPctEl) bBearPctEl.textContent = `${bearPct}%`;
-    if (bBullBarEl) bBullBarEl.style.width = `${bullPct}%`;
-    if (bBearBarEl) bBearBarEl.style.width = `${bearPct}%`;
-
-    const trackedEl = document.getElementById('trackedCount');
-    const advEl = document.getElementById('advCount');
-    const decEl = document.getElementById('decCount');
-    if (trackedEl) trackedEl.textContent = `${stocks.length}`;
-    if (advEl) advEl.textContent = `ADV ${advances}`;
-    if (decEl) decEl.textContent = `DEC ${declines}`;
-  }
-
-  // 2. Render Spotlight HUD Card
-  function renderSpotlight() {
-    const s = state.spotlightStock || state.stockList[0];
-    if (!s) return;
-
-    const symEl = document.getElementById('spotlightSymbol');
-    const scoreEl = document.getElementById('spotlightScore');
-    const pvEl = document.getElementById('spotlightPriceVwap');
-    const drEl = document.getElementById('spotlightDeltaRvol');
-    const zoneEl = document.getElementById('spotlightZone');
-    const actionEl = document.getElementById('spotlightSetupAction');
-    const inspectBtn = document.getElementById('spotlightInspectBtn');
-
-    const rawScore = s.metrics?.score;
-    const hasScore = rawScore !== null && rawScore !== undefined;
-    const effChg = s.change_pct ?? s.open_change_pct ?? 0;
-    const isBull = hasScore ? rawScore >= 50 : effChg >= 0;
-
-    if (symEl) {
-      symEl.innerHTML = `${s.symbol} <span class="w-1.5 h-1.5 rounded-full ${isBull ? 'bg-bull' : 'bg-bear'} animate-ping"></span>`;
-    }
-    if (scoreEl) {
-      scoreEl.className = `${isBull ? 'text-bull' : 'text-bear'} font-extrabold tracking-wide`;
-      scoreEl.textContent = hasScore ? `${rawScore} / 100 [${s.metrics?.signal || (isBull ? 'BULLISH' : 'BEARISH')}]` : `N/A [${s.ai_decision?.action || 'INSUFFICIENT DATA'}]`;
-    }
-    if (pvEl) {
-      pvEl.innerHTML = `₹${s.price?.toFixed(2)} <span class="text-amberGold text-[9px]">(VWAP: ${s.vwap ? s.vwap.toFixed(1) : '---'})</span>`;
-    }
-    if (drEl) {
-      drEl.textContent = `RVOL ${(s.rvol || 0).toFixed(2)}x · VOL ${((s.volume || 0) / 100000).toFixed(1)}L`;
-    }
-    if (zoneEl) {
-      const obs = s.order_blocks || [];
-      if (obs.length > 0) {
-        const ob = obs[obs.length - 1];
-        zoneEl.textContent = `${ob.type.toUpperCase()} OB [${ob.low.toFixed(1)} - ${ob.high.toFixed(1)}]`;
-      } else {
-        zoneEl.textContent = 'NO ACTIVE OB ZONE';
+      if (inspectBtn) {
+        inspectBtn.onclick = () => openStockDetail(s.symbol);
       }
     }
-    if (actionEl) {
-      actionEl.textContent = s.ai_decision?.action || '--';
+
+    // Mini Sparkline SVG Generator
+    function makeSparkSvg(s, strokeColor, glowClass) {
+      const candles = (s.candles_preview || []).map(c => c.c).filter(v => typeof v === 'number');
+      if (candles.length < 2) return '';
+      const min = Math.min(...candles), max = Math.max(...candles);
+      const span = (max - min) || 1;
+      const yOf = v => 20 - ((v - min) / span) * 18;
+      const step = 85 / (candles.length - 1);
+      const pts = candles.map((v, i) => `${(i * step).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+      const vwapLine = (typeof s.vwap === 'number' && s.vwap >= min && s.vwap <= max)
+        ? `<line stroke="#ff9900" stroke-dasharray="2,2" stroke-width="1" x1="0" x2="85" y1="${yOf(s.vwap).toFixed(1)}" y2="${yOf(s.vwap).toFixed(1)}"></line>` : '';
+      return `<svg class="w-20 h-5 ml-auto" viewBox="0 0 85 22">${vwapLine}<polyline class="${glowClass}" fill="none" points="${pts}" stroke="${strokeColor}" stroke-width="1.8"></polyline></svg>`;
     }
-    if (inspectBtn) {
-      inspectBtn.onclick = () => openStockModal(s);
-    }
-  }
 
-  // 3. Render Left Rail Indicators
-  function renderRailIndicators(data) {
-    const stocks = state.stockList;
-    if (stocks.length === 0) return;
+    // Render Long Buildup (Top Half: 8 micro cards + 3 hero cards)
+    function renderLongBuildup() {
+      const grid = document.getElementById('longBuildupGrid');
+      const hero = document.getElementById('longHeroCards');
+      const countEl = document.getElementById('longBuildupCount');
+      if (!grid || !hero) return;
 
-    let totalRvol = 0;
-    stocks.forEach(s => totalRvol += (s.rvol ?? 0));
-    const avgRvol = (totalRvol / stocks.length).toFixed(2);
+      // Filter stocks with positive momentum or Bullish score
+      const bullStocks = [...state.stockList].filter(s => effChg(s) >= 0 || effScore(s) >= 55);
+      bullStocks.sort((a, b) => effScore(b) - effScore(a));
 
-    let adv = 0, dec = 0, chgSum = 0, topG = null, topL = null;
-    stocks.forEach(s => {
-      const c = s.change_pct ?? s.open_change_pct;
-      if (c === null || c === undefined) return;
-      if (c >= 0) adv++; else dec++;
-      chgSum += c;
-      const g = topG ? (topG.change_pct ?? topG.open_change_pct ?? -Infinity) : -Infinity;
-      const l = topL ? (topL.change_pct ?? topL.open_change_pct ?? Infinity) : Infinity;
-      if (c > g) topG = s;
-      if (c < l) topL = s;
-    });
-    const setRail = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setRail('railAvgRvol', `${avgRvol}x`);
-    setRail('railAdv', `${adv}`);
-    setRail('railDec', `${dec}`);
-    setRail('railTopGainer', topG ? topG.symbol : '--');
-    setRail('railTopLoser', topL ? topL.symbol : '--');
-    setRail('railAvgChg', `${(chgSum / stocks.length).toFixed(2)}%`);
-  }
-
-  // Effective displayed change: day change when priced, else session-open move
-  function effChg(s) { return s.change_pct ?? s.open_change_pct ?? 0; }
-  function sortKey(s) { return s.metrics?.score ?? effChg(s); }
-  function actionable(dec) {
-    const a = dec?.action;
-    return !!a && !a.startsWith('AVOID') && a !== 'INSUFFICIENT DATA';
-  }
-  // Real mini-sparkline from the stock's last candles; dashed line marks VWAP
-  function sparkSvg(s, stroke, glowClass) {
-    const candles = (s.candles_preview || []).map(c => c.c).filter(v => typeof v === 'number');
-    if (candles.length < 2) return '';
-    const min = Math.min(...candles), max = Math.max(...candles);
-    const span = (max - min) || 1;
-    const yOf = v => 22 - ((v - min) / span) * 20;
-    const step = 90 / (candles.length - 1);
-    const pts = candles.map((v, i) => `${(i * step).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
-    const vwapLine = (typeof s.vwap === 'number' && s.vwap >= min && s.vwap <= max)
-      ? `<line stroke="#ffab00" stroke-dasharray="2,2" stroke-width="1" x1="0" x2="90" y1="${yOf(s.vwap).toFixed(1)}" y2="${yOf(s.vwap).toFixed(1)}"></line>` : '';
-    return `<svg class="w-24 h-6 ml-auto" viewBox="0 0 90 24">${vwapLine}<polyline class="${glowClass}" fill="none" points="${pts}" stroke="${stroke}" stroke-width="1.8"></polyline></svg>`;
-  }
-  function fmtLevel(v) { return (typeof v === 'number' && isFinite(v)) ? `₹${v.toFixed(1)}` : '--'; }
-
-  // 4. Render Long Buildup (Top Half)
-  function renderLongBuildup() {
-    const container = document.getElementById('longBuildupGrid');
-    const heroContainer = document.getElementById('longHeroCards');
-    const totalOiEl = document.getElementById('longBuildupTotalOi');
-    if (!container || !heroContainer) return;
-
-    // Bullish side: each stock appears on exactly one side of the matrix
-    const bullStocks = [...state.stockList].filter(s => effChg(s) >= 0);
-    bullStocks.sort((a, b) => sortKey(b) - sortKey(a));
-
-    const top8 = bullStocks.slice(0, 8);
-
-    // Micro cards
-    container.innerHTML = top8.map((s, idx) => {
-      const price = s.price?.toFixed(1) || '0.0';
-      const chg = effChg(s);
-      const w1 = Math.min(98, Math.max(0, s.metrics?.score ?? 0));
-      const w2 = Math.min(98, ((s.rvol ?? 0) / 3) * 100);
-      const w3 = Math.min(98, (Math.abs(chg) / 3) * 100);
-
-      return `
-        <div class="hud-box bg-[#04120b]/90 border border-bull/40 rounded p-1.5 flex flex-col justify-between hover:border-bull transition-colors cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
-          <div class="flex items-center justify-between text-[9px] font-semibold">
-            <span class="text-bull font-bold tracking-wider">${s.symbol}</span>
-            <span class="text-slate-200 font-bold">₹${price}</span>
-          </div>
-          <div class="my-1 space-y-0.5">
-            <div class="h-1 bg-bull/80 rounded-sm glow-green" style="width:${w1}%" title="Composite score / 100"></div>
-            <div class="h-1 bg-bull/60 rounded-sm" style="width:${w2}%" title="Relative volume (3x = full bar)"></div>
-            <div class="h-1 bg-bull/90 rounded-sm glow-green" style="width:${w3}%" title="Absolute change (3% = full bar)"></div>
-          </div>
-          <div class="flex justify-between text-[8px] text-slate-400">
-            <span>OB: ${fmtLevel(s.support)}</span>
-            <span class="text-bull font-bold">+${Math.abs(chg).toFixed(2)}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Hero Bull cards (Top 3 signals)
-    const top3 = bullStocks.slice(0, 3);
-    heroContainer.innerHTML = top3.map((s, i) => {
-      const score = s.metrics?.score ?? 'N/A';
-      const chgTxt = `${effChg(s) >= 0 ? "+" : ""}${effChg(s).toFixed(2)}%`;
-      const tradable = actionable(s.ai_decision);
-      const rrTxt = tradable && s.ai_decision?.risk_reward_ratio ? `R:R 1:${s.ai_decision.risk_reward_ratio}` : 'R:R --';
-      const target = tradable ? fmtLevel(s.ai_decision?.target_1) : '--';
-      const sl = tradable ? fmtLevel(s.ai_decision?.stop_loss) : '--';
-      const badge = tradable ? 'BUY' : 'N/A';
-
-      return `
-        <div class="bg-gradient-to-r from-[#051c11] to-[#08291a] border border-bull/60 rounded-lg p-2.5 shadow-lg flex flex-col justify-between hover:border-bull transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <div class="w-7 h-7 rounded-full bg-bull/20 border border-bull flex items-center justify-center">
-                <span class="text-[9px] font-bold text-bull">${badge}</span>
-              </div>
-              <div>
-                <span class="text-xs font-black tracking-widest text-bull uppercase">${s.symbol}</span>
-                <div class="text-[8px] text-slate-400">SCORE: ${score}${score === 'N/A' ? '' : '/100'}</div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-[9px] font-mono text-slate-400">
-                <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | <span class="text-bull font-bold">${chgTxt}</span>
-              </div>
-              ${sparkSvg(s, '#00ff88', 'glow-green')}
-            </div>
-          </div>
-          <div class="mt-2 pt-1 border-t border-bull/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
-            <span>SL: <b class="text-white">${sl}</b></span>
-            <span>T1: <b class="text-white">${target}</b></span>
-            <span class="text-bull font-bold">${rrTxt}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    if (totalOiEl) {
-      totalOiEl.textContent = `${top8.length}`;
-    }
-  }
-
-  // 5. Render Short Buildup (Bottom Half)
-  function renderShortBuildup() {
-    const container = document.getElementById('shortBuildupGrid');
-    const heroContainer = document.getElementById('shortHeroCards');
-    const totalOiEl = document.getElementById('shortBuildupTotalOi');
-    if (!container || !heroContainer) return;
-
-    // Filter bearish or neutral stocks sorted by change ascending
-    const bearStocks = [...state.stockList].filter(s => effChg(s) < 0);
-    bearStocks.sort((a, b) => sortKey(a) - sortKey(b));
-
-    const top8 = bearStocks.slice(0, 8);
-
-    container.innerHTML = top8.map((s, idx) => {
-      const price = s.price?.toFixed(1) || '0.0';
-      const chg = effChg(s);
-      const w1 = Math.min(96, Math.max(0, 100 - (s.metrics?.score ?? 100)));
-      const w2 = Math.min(96, ((s.rvol ?? 0) / 3) * 100);
-      const w3 = Math.min(96, (Math.abs(chg) / 3) * 100);
-
-      return `
-        <div class="hud-box hud-box-red bg-[#160408]/90 border border-bear/40 rounded p-1.5 flex flex-col justify-between hover:border-bear transition-colors cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
-          <div class="flex items-center justify-between text-[9px] font-semibold">
-            <span class="text-bear font-bold tracking-wider">${s.symbol}</span>
-            <span class="text-slate-200 font-bold">₹${price}</span>
-          </div>
-          <div class="my-1 space-y-0.5">
-            <div class="h-1 bg-bear/80 rounded-sm glow-red" style="width:${w1}%" title="Bearishness (100 - score) / 100"></div>
-            <div class="h-1 bg-bear/60 rounded-sm" style="width:${w2}%" title="Relative volume (3x = full bar)"></div>
-            <div class="h-1 bg-bear/90 rounded-sm glow-red" style="width:${w3}%" title="Absolute change (3% = full bar)"></div>
-          </div>
-          <div class="flex justify-between text-[8px] text-slate-400">
-            <span>RES: ${fmtLevel(s.resistance)}</span>
-            <span class="text-bear font-bold">${chg.toFixed(2)}%</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    const top3 = bearStocks.slice(0, 3);
-    heroContainer.innerHTML = top3.map((s) => {
-      const score = s.metrics?.score ?? 'N/A';
-      const chgTxt = `${effChg(s) >= 0 ? "+" : ""}${effChg(s).toFixed(2)}%`;
-      const tradable = actionable(s.ai_decision);
-      const rrTxt = tradable && s.ai_decision?.risk_reward_ratio ? `R:R 1:${s.ai_decision.risk_reward_ratio}` : 'R:R --';
-      const sl = tradable ? fmtLevel(s.ai_decision?.stop_loss) : '--';
-      const target = tradable ? fmtLevel(s.ai_decision?.target_1) : '--';
-      const badge = tradable ? 'SELL' : 'N/A';
-
-      return `
-        <div class="bg-gradient-to-r from-[#21060c] to-[#300912] border border-bear/50 rounded-lg p-2.5 shadow-lg flex flex-col justify-between hover:border-bear transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <div class="w-7 h-7 rounded-full bg-bear/20 border border-bear flex items-center justify-center">
-                <span class="text-[9px] font-bold text-bear">${badge}</span>
-              </div>
-              <div>
-                <span class="text-xs font-black tracking-widest text-bear uppercase">${s.symbol}</span>
-                <div class="text-[8px] text-slate-400">SCORE: ${score}${score === 'N/A' ? '' : '/100'}</div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-[9px] font-mono text-slate-400">
-                <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | <span class="text-bear font-bold">${chgTxt}</span>
-              </div>
-              ${sparkSvg(s, '#ff1744', 'glow-red')}
-            </div>
-          </div>
-          <div class="mt-2 pt-1 border-t border-bear/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
-            <span>SL: <b class="text-white">${sl}</b></span>
-            <span>T1: <b class="text-white">${target}</b></span>
-            <span class="text-bear font-bold">${rrTxt}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    if (totalOiEl) {
-      totalOiEl.textContent = `${top8.length}`;
-    }
-  }
-
-  // 6. Render Footer Telemetry
-  function renderFooterTelemetry(data) {
-    const stocks = state.stockList;
-    let chgSum = 0, adv = 0, dec = 0;
-    let priced = 0;
-    stocks.forEach(s => {
-      const c = s.change_pct ?? s.open_change_pct;
-      if (c === null || c === undefined) return;
-      priced++;
-      chgSum += c;
-      if (c >= 0) adv++; else dec++;
-    });
-    const avgChg = priced ? chgSum / priced : 0;
-
-    const deltaEl = document.getElementById('footerAggregateDelta');
-    const pcrEl = document.getElementById('footerPcrRatio');
-    const countEl = document.getElementById('footerTrackedCount');
-
-    if (deltaEl) {
-      const isPos = avgChg >= 0;
-      deltaEl.className = `${isPos ? 'text-bull' : 'text-bear'} font-bold`;
-      deltaEl.textContent = `${isPos ? '+' : ''}${avgChg.toFixed(2)}%`;
-    }
-    if (pcrEl) {
-      pcrEl.textContent = `ADV ${adv} / DEC ${dec}`;
-    }
-    if (countEl) {
-      countEl.textContent = `${stocks.length} Active Instruments`;
-    }
-  }
-
-  // 7. Stock Modal Trigger
-  window.openStockDetail = function(symbol) {
-    const s = state.stocks[symbol];
-    if (!s) return;
-    openStockModal(s);
-  };
-
-  function openStockModal(s) {
-    const modal = document.getElementById('stockModal');
-    if (!modal) return;
-
-    document.getElementById('modalSymbol').textContent = s.symbol;
-    document.getElementById('modalName').textContent = s.name || s.symbol;
-    document.getElementById('modalSector').textContent = s.sector || 'General';
-    document.getElementById('modalPrice').textContent = `₹${s.price?.toFixed(2)}`;
-
-    const chg = s.change_pct || 0;
-    const isPos = chg >= 0;
-    const chgEl = document.getElementById('modalChg');
-    chgEl.className = `text-xs font-bold ${isPos ? 'text-bull' : 'text-bear'}`;
-    chgEl.textContent = `${isPos ? '+' : ''}${chg.toFixed(2)}%`;
-
-    const modalScore = s.metrics?.score;
-    document.getElementById('modalScoreVal').textContent = (modalScore !== null && modalScore !== undefined) ? modalScore : 'N/A';
-
-    document.getElementById('modalVwap').textContent = s.vwap ? `₹${s.vwap.toFixed(2)}` : '---';
-    document.getElementById('modalRsi').textContent = s.metrics?.raw?.rsi?.toFixed(1) || '--';
-    document.getElementById('modalRvol').textContent = (typeof s.rvol === 'number') ? `${s.rvol.toFixed(2)}x` : '--';
-    document.getElementById('modalRange').textContent = `${s.day_low?.toFixed(0) || '---'} - ${s.day_high?.toFixed(0) || '---'}`;
-
-    const modalAction = s.ai_decision?.action || '--';
-    const modalTradable = actionable(s.ai_decision);
-    document.getElementById('modalAction').textContent = modalAction;
-    document.getElementById('modalSl').textContent = modalTradable && s.ai_decision?.stop_loss ? `₹${s.ai_decision.stop_loss.toFixed(2)}` : '--';
-    document.getElementById('modalT1').textContent = modalTradable && s.ai_decision?.target_1 ? `₹${s.ai_decision.target_1.toFixed(2)}` : '--';
-    document.getElementById('modalRr').textContent = s.ai_decision?.risk_reward_ratio ? `1 : ${s.ai_decision.risk_reward_ratio}` : '--';
-
-    // Populate Order Blocks table
-    const obList = document.getElementById('modalObList');
-    const obs = s.order_blocks || [];
-    document.getElementById('modalObCount').textContent = `${obs.length} Active Zones`;
-
-    if (obs.length === 0) {
-      obList.innerHTML = `<div class="p-2 rounded bg-slate-900 text-slate-500 text-center">No active order blocks detected in current timeframe.</div>`;
-    } else {
-      obList.innerHTML = obs.map(ob => {
-        const isBullOb = ob.type === 'bullish';
+      const top8 = bullStocks.slice(0, 8);
+      grid.innerHTML = top8.map(s => {
+        const score = effScore(s);
+        const chg = effChg(s);
+        const w1 = Math.min(100, Math.max(0, score));
+        const w2 = Math.min(100, ((s.rvol || 1) / 3) * 100);
         return `
-          <div class="flex items-center justify-between p-2 rounded bg-slate-900 border ${isBullOb ? 'border-bull/30' : 'border-bear/30'}">
-            <div class="flex items-center space-x-2">
-              <span class="w-2 h-2 rounded-full ${isBullOb ? 'bg-bull' : 'bg-bear'}"></span>
-              <span class="font-bold ${isBullOb ? 'text-bull' : 'text-bear'} uppercase">${ob.type} OB</span>
+          <div class="bg-[#03150d] hover:bg-[#062416] border border-[#00ff88]/30 hover:border-[#00ff88] rounded p-1.5 flex flex-col justify-between transition-all cursor-pointer shadow" onclick="window.openStockDetail('${s.symbol}')">
+            <div class="flex items-center justify-between text-[10px] font-bold">
+              <span class="text-[#00ff88] tracking-wider">${s.symbol}</span>
+              <span class="text-white">₹${(s.price || 0).toFixed(1)}</span>
             </div>
-            <span class="text-white font-bold">₹${ob.low.toFixed(1)} - ₹${ob.high.toFixed(1)}</span>
-            <span class="text-[9px] text-slate-400">INDEX: #${ob.index}</span>
+            <!-- Micro Volume/Orderbook Bars -->
+            <div class="my-1 space-y-0.5">
+              <div class="h-1 bg-[#00ff88] rounded-sm glow-bull" style="width:${w1}%" title="Score: ${score.toFixed(1)}"></div>
+              <div class="h-0.5 bg-emerald-700 rounded-sm" style="width:${w2}%" title="RVOL: ${(s.rvol || 1).toFixed(2)}x"></div>
+            </div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400">
+              <span class="text-[8px] bg-[#00ff88]/15 text-[#00ff88] px-1 rounded font-bold">${score >= 70 ? 'BULL' : 'NORM'}</span>
+              <span class="text-[#00ff88] font-bold">+${Math.abs(chg).toFixed(2)}%</span>
+            </div>
           </div>
         `;
       }).join('');
+
+      // Top 3 Bullish Hero Cards (Best of Day is #1)
+      const top3 = [state.bestStock, ...bullStocks.filter(s => s.symbol !== state.bestStock?.symbol)].filter(Boolean).slice(0, 3);
+      hero.innerHTML = top3.map((s, idx) => {
+        const isBest = idx === 0 && state.bestStock && s.symbol === state.bestStock.symbol;
+        const score = effScore(s);
+        const chgTxt = `+${Math.abs(effChg(s)).toFixed(2)}%`;
+        const crown = isBest ? '<span class="text-[#ffb000] text-[10px] font-extrabold mr-1">★ BEST OF DAY</span>' : '';
+        const s1 = s.cpr?.bc ? `₹${s.cpr.bc.toFixed(1)}` : fmtLevel(s.support);
+        const r1 = s.cpr?.tc ? `₹${s.cpr.tc.toFixed(1)}` : fmtLevel(s.resistance);
+
+        return `
+          <div class="bg-gradient-to-r from-[#041a10] to-[#07291a] border ${isBest ? 'border-[#00ff88] shadow-lg glow-bull' : 'border-[#00ff88]/50'} rounded-lg p-2 flex flex-col justify-between hover:border-[#00ff88] transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded bg-[#00ff88]/20 border border-[#00ff88] flex items-center justify-center">
+                  <span class="text-[8px] font-black text-[#00ff88]">BULL</span>
+                </div>
+                <div>
+                  <div class="flex items-center">
+                    ${crown}
+                    <span class="text-xs font-black text-[#00ff88] uppercase tracking-wider">${s.symbol}</span>
+                  </div>
+                  <div class="text-[8px] text-slate-400">SCORE: <b class="text-white">${score.toFixed(1)}/100</b> · TIER: <b class="text-emerald-400">BULLISH</b></div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-[9px] font-mono text-white font-bold">₹${(s.price || 0).toFixed(1)} <span class="text-[#00ff88] ml-1">${chgTxt}</span></div>
+                ${makeSparkSvg(s, '#00ff88', 'glow-bull')}
+              </div>
+            </div>
+            <div class="mt-1.5 pt-1 border-t border-[#00ff88]/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
+              <span>S1: <b class="text-white">${s1}</b></span>
+              <span>ZONE: <b class="text-[#00ff88]">${r1}</b></span>
+              <span class="text-emerald-300 font-bold">R:R ≥ 1.5</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (countEl) countEl.textContent = `${bullStocks.length}`;
     }
 
-    // Spotlight button in modal
-    document.getElementById('modalSpotlightSelectBtn').onclick = () => {
-      state.spotlightStock = s;
-      renderSpotlight();
-      modal.classList.add('hidden');
-    };
+    // Render Short Buildup (Bottom Half: 8 micro cards + 3 hero cards)
+    function renderShortBuildup() {
+      const grid = document.getElementById('shortBuildupGrid');
+      const hero = document.getElementById('shortHeroCards');
+      const countEl = document.getElementById('shortBuildupCount');
+      if (!grid || !hero) return;
 
-    modal.classList.remove('hidden');
-  }
+      const bearStocks = [...state.stockList].filter(s => effChg(s) < 0 || effScore(s) < 50);
+      bearStocks.sort((a, b) => effScore(a) - effScore(b));
 
-  // Modal Close Events
-  document.getElementById('closeStockModalBtn').onclick = () => document.getElementById('stockModal').classList.add('hidden');
-  document.getElementById('modalCloseActionBtn').onclick = () => document.getElementById('stockModal').classList.add('hidden');
+      const top8 = bearStocks.slice(0, 8);
+      grid.innerHTML = top8.map(s => {
+        const score = effScore(s);
+        const chg = effChg(s);
+        const w1 = Math.min(100, Math.max(0, 100 - score));
+        const w2 = Math.min(100, ((s.rvol || 1) / 3) * 100);
+        return `
+          <div class="bg-[#180408] hover:bg-[#25070e] border border-[#ff1744]/30 hover:border-[#ff1744] rounded p-1.5 flex flex-col justify-between transition-all cursor-pointer shadow" onclick="window.openStockDetail('${s.symbol}')">
+            <div class="flex items-center justify-between text-[10px] font-bold">
+              <span class="text-[#ff1744] tracking-wider">${s.symbol}</span>
+              <span class="text-white">₹${(s.price || 0).toFixed(1)}</span>
+            </div>
+            <!-- Micro Volume/Orderbook Bars -->
+            <div class="my-1 space-y-0.5">
+              <div class="h-1 bg-[#ff1744] rounded-sm glow-bear" style="width:${w1}%" title="Bearish Score: ${score.toFixed(1)}"></div>
+              <div class="h-0.5 bg-rose-900 rounded-sm" style="width:${w2}%" title="RVOL: ${(s.rvol || 1).toFixed(2)}x"></div>
+            </div>
+            <div class="flex justify-between text-[9px] font-mono text-slate-400">
+              <span class="text-[8px] bg-[#ff1744]/15 text-[#ff1744] px-1 rounded font-bold">BEAR</span>
+              <span class="text-[#ff1744] font-bold">${chg.toFixed(2)}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-  // 8. Global Search Implementation
-  const searchModal = document.getElementById('searchModal');
-  const searchInput = document.getElementById('searchInput');
-  const searchResults = document.getElementById('searchResults');
-  const searchTriggerBtn = document.getElementById('searchTriggerBtn');
+      // Top 3 Bearish Hero Cards (Worst of Day is #1)
+      const top3 = [state.worstStock, ...bearStocks.filter(s => s.symbol !== state.worstStock?.symbol)].filter(Boolean).slice(0, 3);
+      hero.innerHTML = top3.map((s, idx) => {
+        const isWorst = idx === 0 && state.worstStock && s.symbol === state.worstStock.symbol;
+        const score = effScore(s);
+        const chgTxt = `${effChg(s).toFixed(2)}%`;
+        const warn = isWorst ? '<span class="text-[#ff1744] text-[10px] font-extrabold mr-1">⚠ WORST OF DAY</span>' : '';
+        const r1 = s.cpr?.tc ? `₹${s.cpr.tc.toFixed(1)}` : fmtLevel(s.resistance);
+        const s1 = s.cpr?.bc ? `₹${s.cpr.bc.toFixed(1)}` : fmtLevel(s.support);
 
-  function openSearch() {
-    searchModal.classList.remove('hidden');
-    searchInput.value = '';
-    searchInput.focus();
-    renderSearchResults('');
-  }
+        return `
+          <div class="bg-gradient-to-r from-[#21060c] to-[#360912] border ${isWorst ? 'border-[#ff1744] shadow-lg glow-bear' : 'border-[#ff1744]/50'} rounded-lg p-2 flex flex-col justify-between hover:border-[#ff1744] transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded bg-[#ff1744]/20 border border-[#ff1744] flex items-center justify-center">
+                  <span class="text-[8px] font-black text-[#ff1744]">BEAR</span>
+                </div>
+                <div>
+                  <div class="flex items-center">
+                    ${warn}
+                    <span class="text-xs font-black text-[#ff1744] uppercase tracking-wider">${s.symbol}</span>
+                  </div>
+                  <div class="text-[8px] text-slate-400">SCORE: <b class="text-white">${score.toFixed(1)}/100</b> · TIER: <b class="text-rose-400">BEARISH</b></div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-[9px] font-mono text-white font-bold">₹${(s.price || 0).toFixed(1)} <span class="text-[#ff1744] ml-1">${chgTxt}</span></div>
+                ${makeSparkSvg(s, '#ff1744', 'glow-bear')}
+              </div>
+            </div>
+            <div class="mt-1.5 pt-1 border-t border-[#ff1744]/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
+              <span>RES: <b class="text-white">${r1}</b></span>
+              <span>ZONE: <b class="text-[#ff1744]">${s1}</b></span>
+              <span class="text-rose-300 font-bold">R:R ≥ 1.5</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-  function closeSearch() {
-    searchModal.classList.add('hidden');
-  }
-
-  if (searchTriggerBtn) searchTriggerBtn.onclick = openSearch;
-
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      openSearch();
-    } else if (e.key === 'Escape') {
-      closeSearch();
-      document.getElementById('stockModal').classList.add('hidden');
-      document.getElementById('snapshotModal').classList.add('hidden');
+      if (countEl) countEl.textContent = `${bearStocks.length}`;
     }
-  });
 
-  searchInput.addEventListener('input', (e) => {
-    renderSearchResults(e.target.value.trim().toUpperCase());
-  });
-
-  function renderSearchResults(query) {
-    const list = state.stockList.filter(s => 
-      s.symbol.includes(query) || (s.name && s.name.toUpperCase().includes(query)) || (s.sector && s.sector.toUpperCase().includes(query))
-    );
-
-    if (list.length === 0) {
-      searchResults.innerHTML = `<div class="p-3 text-slate-500 text-center">No symbols found matching "${query}".</div>`;
-      return;
+    // Trajectory Stream Canvas Engine
+    async function fetchFlowTrajectories() {
+      try {
+        let resp = await fetch(`/api/flow?timeframe=${state.timeframe}`);
+        let data = await resp.json();
+        if (!resp.ok || !data.stocks) {
+          resp = await fetch(`/api/flow?session=previous&timeframe=${state.timeframe}`);
+          data = await resp.json();
+        }
+        state.flowData = data;
+        drawFlowCanvas();
+      } catch (e) {}
     }
 
-    searchResults.innerHTML = list.slice(0, 10).map(s => `
-      <div class="flex items-center justify-between p-2 rounded bg-slate-900/80 hover:bg-cyan-950 border border-transparent hover:border-cyanLaser cursor-pointer transition" onclick="window.selectFromSearch('${s.symbol}')">
-        <div>
-          <span class="text-white font-bold text-xs">${s.symbol}</span>
-          <span class="text-slate-400 text-[10px] ml-2">${s.name || ''}</span>
-        </div>
-        <div class="text-right">
-          <span class="text-white font-bold">₹${s.price?.toFixed(2)}</span>
-          <span class="text-[10px] ml-1 font-bold ${s.change_pct >= 0 ? 'text-bull' : 'text-bear'}">${s.change_pct >= 0 ? '+' : ''}${s.change_pct?.toFixed(2)}%</span>
-        </div>
-      </div>
-    `).join('');
-  }
+    function drawFlowCanvas() {
+      const canvas = document.getElementById('trajCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
 
-  window.selectFromSearch = function(sym) {
-    const s = state.stocks[sym];
-    if (s) {
-      state.spotlightStock = s;
-      renderSpotlight();
-      closeSearch();
-      openStockModal(s);
+      ctx.clearRect(0, 0, w, h);
+      const zeroY = h / 2;
+      const scale = 4.0; // +/- 4.0%
+      const yOf = v => zeroY - (Math.max(-scale, Math.min(scale, v)) / scale) * (h / 2 - 24);
+
+      // Horizontal Dotted Guidelines
+      ctx.strokeStyle = 'rgba(255, 153, 0, 0.15)';
+      ctx.setLineDash([3, 4]);
+      [3.0, 2.0, 1.0, -1.0, -2.0, -3.0].forEach(lvl => {
+        const y = yOf(lvl);
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      });
+
+      // 0.00% Center Baseline
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(w, zeroY); ctx.stroke();
+      ctx.setLineDash([]);
+
+      const data = state.flowData;
+      if (!data || !data.stocks) return;
+
+      const stocks = Object.entries(data.stocks);
+      const bars = (data.bars && data.bars.length) || 75;
+      const xStep = (w * 0.88) / Math.max(1, bars - 1);
+
+      // Draw all trajectories
+      stocks.forEach(([sym, st]) => {
+        const arr = st.pct || [];
+        if (arr.length < 2) return;
+        const last = [...arr].reverse().find(v => v !== null && v !== undefined) ?? 0;
+        const isBull = last >= 0;
+        const isHovered = state.hoveredStock === sym;
+
+        ctx.strokeStyle = isHovered 
+          ? (isBull ? '#00ff88' : '#ff1744')
+          : (isBull ? 'rgba(0, 255, 136, 0.35)' : 'rgba(255, 23, 68, 0.35)');
+        ctx.lineWidth = isHovered ? 3.0 : 1.1;
+
+        if (isHovered) {
+          ctx.shadowColor = isBull ? '#00ff88' : '#ff1744';
+          ctx.shadowBlur = 10;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.beginPath();
+        let pen = false;
+        arr.forEach((v, i) => {
+          if (v === null || v === undefined) { pen = false; return; }
+          const px = i * xStep, py = yOf(v);
+          if (!pen) { ctx.moveTo(px, py); pen = true; } else { ctx.lineTo(px, py); }
+        });
+        ctx.stroke();
+      });
+      ctx.shadowBlur = 0;
+
+      // Draw Funnel Bracket & Fiber Connector Cables at Right Edge (15:30)
+      const funnelX = w * 0.88;
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      // Upper bracket
+      ctx.moveTo(funnelX - 10, zeroY - 70);
+      ctx.lineTo(funnelX, zeroY - 70);
+      ctx.lineTo(funnelX, zeroY);
+      // Lower bracket
+      ctx.lineTo(funnelX, zeroY + 70);
+      ctx.lineTo(funnelX - 10, zeroY + 70);
+      ctx.stroke();
+
+      // Upper glowing green fiber branching toward top-right matrix
+      ctx.strokeStyle = 'rgba(0, 255, 136, 0.7)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(funnelX, zeroY - 40);
+      ctx.bezierCurveTo(funnelX + 25, zeroY - 60, w - 20, zeroY - 100, w, zeroY - 120);
+      ctx.stroke();
+
+      // Lower glowing crimson fiber branching toward bottom-right matrix
+      ctx.strokeStyle = 'rgba(255, 23, 68, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(funnelX, zeroY + 40);
+      ctx.bezierCurveTo(funnelX + 25, zeroY + 60, w - 20, zeroY + 100, w, zeroY + 120);
+      ctx.stroke();
     }
-  };
 
-  // 9. Export CSV Functionality
-  document.getElementById('exportCsvBtn').onclick = () => {
-    const stocks = state.stockList;
-    if (stocks.length === 0) return;
+    // Interactive Crosshair & Hover on Canvas
+    const canvas = document.getElementById('trajCanvas');
+    if (canvas) {
+      canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
 
-    let csv = "Symbol,Name,Sector,Price,Change_Pct,Score,Action,VWAP,RVOL,Support,Resistance,OrderBlocksCount\n";
-    stocks.forEach(s => {
-      csv += `"${s.symbol}","${s.name || ''}","${s.sector || ''}",${s.price || 0},${s.change_pct ?? ''},${s.metrics?.score || 0},"${s.ai_decision?.action || ''}",${s.vwap || 0},${s.rvol || 0},${s.support || 0},${s.resistance || 0},${(s.order_blocks || []).length}
-`;
+        // Position Floating HUD Card near cursor
+        const hud = document.getElementById('floatingHudCard');
+        if (hud && !hud.classList.contains('hidden')) {
+          const clampedX = Math.min(rect.width - 340, Math.max(20, mx - 140));
+          const clampedY = Math.min(rect.height - 230, Math.max(20, my - 110));
+          hud.style.left = `${clampedX}px`;
+          hud.style.top = `${clampedY}px`;
+        }
+
+        // Find nearest trajectory stock
+        if (state.flowData && state.flowData.stocks) {
+          const w = canvas.width, h = canvas.height;
+          const zeroY = h / 2, scale = 4.0;
+          const yOf = v => zeroY - (Math.max(-scale, Math.min(scale, v)) / scale) * (h / 2 - 24);
+          const bars = (state.flowData.bars && state.flowData.bars.length) || 75;
+          const xStep = (w * 0.88) / Math.max(1, bars - 1);
+          const barIdx = Math.min(bars - 1, Math.max(0, Math.round(mx / xStep)));
+
+          let closestSym = null, minDist = 25;
+          Object.entries(state.flowData.stocks).forEach(([sym, st]) => {
+            const val = st.pct?.[barIdx];
+            if (val === undefined || val === null) return;
+            const py = yOf(val);
+            const dist = Math.abs(my - py);
+            if (dist < minDist) {
+              minDist = dist;
+              closestSym = sym;
+            }
+          });
+
+          if (closestSym && closestSym !== state.hoveredStock) {
+            state.hoveredStock = closestSym;
+            if (state.stocks[closestSym]) {
+              state.spotlightStock = state.stocks[closestSym];
+              renderFloatingHud();
+            }
+            drawFlowCanvas();
+          }
+        }
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        state.hoveredStock = null;
+        drawFlowCanvas();
+      });
+    }
+
+    // Window Resize Observer for Canvas
+    window.addEventListener('resize', () => {
+      drawFlowCanvas();
     });
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `marketscope_orderblocks_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    // Global Modal Functions
+    window.openStockDetail = symbol => {
+      const s = state.stocks[symbol] || state.stockList.find(x => x.symbol === symbol);
+      if (!s) return;
 
-  // 10. Snap Terminal Functionality
-  const snapshotModal = document.getElementById('snapshotModal');
-  const snapshotText = document.getElementById('snapshotText');
-  const copySnapshotBtn = document.getElementById('copySnapshotBtn');
-  const copyFeedback = document.getElementById('copySnapshotFeedback');
-  const downloadSnapshotBtn = document.getElementById('downloadSnapshotBtn');
+      const modal = document.getElementById('stockModal');
+      const score = effScore(s);
+      const isBull = score >= 70 || effChg(s) >= 0;
 
-  document.getElementById('snapTerminalBtn').onclick = () => {
-    const now = new Date();
-    const stocks = state.stockList;
-    const priced = stocks.filter(s => (s.change_pct ?? s.open_change_pct) !== null && (s.change_pct ?? s.open_change_pct) !== undefined);
-    const bullCount = priced.filter(s => (s.change_pct ?? s.open_change_pct) >= 0).length;
-    const bearCount = priced.length - bullCount;
+      document.getElementById('modalSymbol').textContent = s.symbol;
+      document.getElementById('modalName').textContent = s.name || `${s.symbol} Equity (NSE)`;
+      document.getElementById('modalPrice').textContent = `₹${(s.price || 0).toFixed(1)}`;
+      document.getElementById('modalChg').textContent = `${effChg(s) >= 0 ? '+' : ''}${effChg(s).toFixed(2)}%`;
+      document.getElementById('modalChg').className = `text-xs font-bold ${isBull ? 'text-[#00ff88]' : 'text-[#ff1744]'}`;
+      document.getElementById('modalScoreVal').textContent = Math.round(score);
+      document.getElementById('modalTierBadge').textContent = score >= 70 ? 'BULLISH (BUY)' : score < 50 ? 'BEARISH (SELL)' : 'NORMAL (HOLD)';
+      document.getElementById('modalTierBadge').className = `text-[10px] px-2 py-0.5 rounded font-bold ${score >= 70 ? 'bg-emerald-950 text-emerald-400 border border-emerald-700' : score < 50 ? 'bg-rose-950 text-rose-400 border border-rose-700' : 'bg-slate-900 text-slate-300 border border-slate-700'}`;
 
-    let report = `================================================================================
-`;
-    report += `CYBERNETIC QUANT TERMINAL // NSE ORDER BLOCK SNAPSHOT
-`;
-    report += `Timestamp: ${now.toUTCString()} (IST: ${now.toLocaleTimeString()})
-`;
-    report += `Timeframe: ${state.timeframe}M | Tracked Instruments: ${stocks.length}
-`;
-    report += `Market Breadth: ${bullCount} Advances / ${bearCount} Declines (of ${priced.length} priced instruments)
-`;
-    report += `================================================================================
+      document.getElementById('modalVwap').textContent = s.vwap ? `₹${s.vwap.toFixed(1)}` : '--';
+      document.getElementById('modalRsi').textContent = s.rsi ? s.rsi.toFixed(1) : (s.indicators?.rsi ? s.indicators.rsi.toFixed(1) : '50.0');
+      document.getElementById('modalRvol').textContent = `${(s.rvol || 1).toFixed(2)}x`;
+      document.getElementById('modalSupertrend').textContent = (s.indicators?.supertrend_dir ?? 1) >= 0 ? '+1 BULLISH' : '-1 BEARISH';
+      document.getElementById('modalSupertrend').className = `font-bold text-xs ${(s.indicators?.supertrend_dir ?? 1) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
-`;
+      if (s.cpr) {
+        document.getElementById('modalCpr').textContent = `${s.cpr.tc?.toFixed(1)} / ${s.cpr.pivot?.toFixed(1)} / ${s.cpr.bc?.toFixed(1)}`;
+      } else {
+        document.getElementById('modalCpr').textContent = '--';
+      }
 
-    report += `[TOP LONGS BY COMPOSITE SCORE (score >= 60; empty when no scored signals)]
-`;
-    const topLongs = [...stocks].filter(s => s.metrics?.score >= 60).sort((a,b) => b.metrics.score - a.metrics.score).slice(0, 5);
-    topLongs.forEach((s, idx) => {
-      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (${(s.change_pct ?? s.open_change_pct ?? 0).toFixed(2)}%)  Score: ${s.metrics?.score ?? 'N/A'}/100  VWAP: ₹${s.vwap?.toFixed(1)}  RVOL: ${s.rvol?.toFixed(1)}x
-`;
-      if (s.order_blocks?.length > 0) {
-        const ob = s.order_blocks[s.order_blocks.length-1];
-        report += `     Active OB Zone: [₹${ob.low.toFixed(1)} - ₹${ob.high.toFixed(1)}]
-`;
+      if (s.camarilla) {
+        document.getElementById('modalCam').textContent = `${s.camarilla.h3?.toFixed(1)} / ${s.camarilla.l3?.toFixed(1)}`;
+      } else {
+        document.getElementById('modalCam').textContent = '--';
+      }
+
+      document.getElementById('modalLayaText').textContent = s.ai_decision?.summary || 
+        `Quant Indicator Engine: 0-100 Score is ${score.toFixed(1)} (${s.tier || 'NORMAL'}). CPR Pivot alignment confirms ${isBull ? 'accumulation setup with trailing Supertrend support' : 'distribution setup with Camarilla resistance'}.`;
+
+      modal.classList.remove('hidden');
+    };
+
+    window.closeStockModal = () => {
+      document.getElementById('stockModal').classList.add('hidden');
+    };
+
+    window.openSearchModal = () => {
+      const modal = document.getElementById('searchModal');
+      const input = document.getElementById('searchInput');
+      modal.classList.remove('hidden');
+      input.value = '';
+      input.focus();
+      renderSearchResults('');
+    };
+
+    window.closeSearchModal = () => {
+      document.getElementById('searchModal').classList.add('hidden');
+    };
+
+    function renderSearchResults(q) {
+      const container = document.getElementById('searchResults');
+      const filtered = state.stockList.filter(s => s.symbol.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
+      container.innerHTML = filtered.map(s => `
+        <div class="p-2 hover:bg-[#121c2e] rounded flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ff9900]/40 transition" onclick="closeSearchModal(); openStockDetail('${s.symbol}')">
+          <div class="flex items-center space-x-2">
+            <span class="text-[#ff9900] font-bold text-xs">${s.symbol}</span>
+            <span class="text-slate-400 text-[10px]">${s.name || ''}</span>
+          </div>
+          <div class="text-right">
+            <span class="text-white font-bold">₹${(s.price || 0).toFixed(1)}</span>
+            <span class="text-xs ${effChg(s) >= 0 ? 'text-[#00ff88]' : 'text-[#ff1744]'} ml-1">${effChg(s) >= 0 ? '+' : ''}${effChg(s).toFixed(2)}%</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', e => renderSearchResults(e.target.value));
+    }
+
+    // Keyboard Shortcuts (Ctrl+K, ESC)
+    window.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openSearchModal();
+      } else if (e.key === 'Escape') {
+        closeStockModal();
+        closeSearchModal();
       }
     });
 
-    report += `
-[TOP SHORTS BY COMPOSITE SCORE (score < 50; empty when no scored signals)]
-`;
-    const topShorts = [...stocks].filter(s => s.metrics?.score !== null && s.metrics?.score !== undefined && s.metrics.score < 50).sort((a,b) => a.metrics.score - b.metrics.score).slice(0, 5);
-    topShorts.forEach((s, idx) => {
-      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (${(s.change_pct ?? s.open_change_pct ?? 0).toFixed(2)}%)  Score: ${s.metrics?.score ?? 'N/A'}/100  Res: ₹${s.resistance?.toFixed(1)}
-`;
-    });
-
-    report += `
-[QUANT SYNTHESIS SUMMARY]
-`;
-    report += `PCR: 1.28 | Swarm Delta: +18,492 Lakhs | Risk State: Standard Intraday Quant Allocation
-`;
-
-    snapshotText.value = report;
-    snapshotModal.classList.remove('hidden');
-  };
-
-  document.getElementById('closeSnapshotModalBtn').onclick = () => snapshotModal.classList.add('hidden');
-
-  copySnapshotBtn.onclick = () => {
-    navigator.clipboard.writeText(snapshotText.value).then(() => {
-      copyFeedback.classList.remove('opacity-0');
-      setTimeout(() => copyFeedback.classList.add('opacity-0'), 2500);
-    });
-  };
-
-  downloadSnapshotBtn.onclick = () => {
-    const blob = new Blob([snapshotText.value], { type: 'text/markdown;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `terminal_snapshot_${new Date().toISOString().slice(0,10)}.md`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Initial fetch and start continuous polling
-  fetchMarketData();
-  async function fetchFlowTrajectories() {
-    try {
-      const resp = await fetch('/api/flow');
-      if (!resp.ok) return;
-      const data = await resp.json();
-      drawTrajectories(data);
-    } catch (e) { /* keep last frame */ }
-  }
-
-  function drawTrajectories(data) {
-    const canvas = document.getElementById('trajCanvas');
-    if (!canvas || !data || !data.stocks) return;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h) return;
-    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-    ctx.clearRect(0, 0, w, h);
-    const scale = 3.0; // matches printed axis (+/- 3%)
-    const zeroY = h / 2;
-    const yOf = v => zeroY - (Math.max(-scale, Math.min(scale, v)) / scale) * (h / 2 - 16);
-    ctx.strokeStyle = 'rgba(148,163,184,0.35)';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(w, zeroY); ctx.stroke();
-    ctx.setLineDash([]);
-    const bars = (data.bars && data.bars.length) || 75;
-    const xStep = w / Math.max(1, bars - 1);
-    Object.values(data.stocks).forEach(st => {
-      const arr = st.pct || [];
-      if (arr.length < 2) return;
-      const last = [...arr].reverse().find(v => v !== null && v !== undefined);
-      if (last === undefined) return;
-      ctx.strokeStyle = last >= 0 ? 'rgba(0,255,136,0.75)' : 'rgba(255,23,68,0.75)';
-      ctx.lineWidth = 1.1;
-      ctx.beginPath();
-      let pen = false;
-      arr.forEach((v, i) => {
-        if (v === null || v === undefined) { pen = false; return; }
-        const px = i * xStep, py = yOf(v);
-        if (!pen) { ctx.moveTo(px, py); pen = true; } else { ctx.lineTo(px, py); }
+    window.exportData = () => {
+      const csv = ['Symbol,Price,ChangePct,QuantScore,Tier,RVOL,VWAP'];
+      state.stockList.forEach(s => {
+        csv.push(`${s.symbol},${s.price || 0},${effChg(s).toFixed(2)},${effScore(s).toFixed(1)},${s.tier || 'NORMAL'},${s.rvol || 1},${s.vwap || 0}`);
       });
-      ctx.stroke();
-    });
-  }
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `ZienQuant_Bloomberg_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    };
 
-  fetchFlowTrajectories();
-  setInterval(fetchMarketData, 5000);
-
-})();
-</script>
-
-</body></html>
+    // Initial Execution
+    fetchSchedule();
+    fetchData();
+    setInterval(fetchData, 5000);
+    setInterval(fetchSchedule, 30000);
+  })();
+  </script>
+</body>
+</html>
