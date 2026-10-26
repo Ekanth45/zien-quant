@@ -462,7 +462,7 @@ class LayaAIEngine:
             "options": {
                 "num_predict": num_predict,
                 "temperature": temperature,
-                "num_ctx": num_ctx,
+                "num_ctx": max(num_ctx, 4096),
             },
         }
         eff_timeout = timeout or self.timeout_sec

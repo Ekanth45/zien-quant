@@ -577,7 +577,7 @@
             <span>⚡</span> LOCAL LAYA AI (Gemma 4 Quantized Engine)
           </h3>
           <p class="text-slate-300 text-[11px] leading-relaxed">
-            Running 100% locally via Ollama with zero external API dependencies or synthetic telemetry. All decision reasoning is verified against real NSE intraday candle prints.
+            Running 100% locally via Ollama with zero external API dependencies or simulated telemetry. All decision reasoning is verified against real NSE intraday candle prints.
           </p>
         </div>
       </div>
@@ -664,7 +664,7 @@
               <h2 class="text-sm font-extrabold text-white tracking-wider">LAYA AI // LOCAL QUANT COPILOT</h2>
               <span id="layaAiHeaderPill" class="text-[9px] px-2 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-700 font-bold">OLLAMA CONNECTED</span>
             </div>
-            <p id="layaAiSubtext" class="text-[10px] text-slate-400 font-mono">Model: laya-quant:latest (Local Gemma 4 Quant) · Single-Owner Zero Synthetic</p>
+            <p id="layaAiSubtext" class="text-[10px] text-slate-400 font-mono">Model: laya-quant:latest (Local Gemma 4 Quant) · Single-Owner Verified Real Data</p>
           </div>
         </div>
 
@@ -1567,7 +1567,8 @@
           body: JSON.stringify({
             message: message,
             symbol: targetSymbol,
-            mode: 'live'
+            mode: 'live',
+            client: 'bloomberg_terminal'
           })
         });
 

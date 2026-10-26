@@ -996,14 +996,14 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self._send_json(analysis)
 
     def _handle_ai_chat(self) -> None:
+        body = self._parse_json_body() or {}
         client_ip = self.client_address[0] if hasattr(self, "client_address") and self.client_address else "127.0.0.1"
         is_local = client_ip in ("127.0.0.1", "::1", "localhost")
+        is_terminal = is_local and (body.get("client") == "bloomberg_terminal" or (hasattr(self, "headers") and self.headers and self.headers.get("X-Terminal-Client") == "bloomberg"))
         session = self._get_current_session()
-        if not session and not is_local:
+        if not session and not is_terminal:
             self._send_json({"error": "auth_required", "detail": "Authentication required for AI copilot chat."}, status=401)
             return
-
-        body = self._parse_json_body() or {}
         message = str(body.get("message", "")).strip()
         symbol = body.get("symbol")
         mode = str(body.get("mode", "live")).lower()

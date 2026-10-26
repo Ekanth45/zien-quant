@@ -5,10 +5,11 @@ import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 
 const staticRoot = new URL('../marketscope/static/', import.meta.url);
-const [html, controller, adapter, fixture] = await Promise.all([
+const [html, controller, adapter, historicalChart, fixture] = await Promise.all([
   readFile(new URL('workspace.html', staticRoot), 'utf8'),
   readFile(new URL('workspace.js', staticRoot), 'utf8'),
   readFile(new URL('workspace-api.js', staticRoot), 'utf8'),
+  readFile(new URL('historical-chart.js', staticRoot), 'utf8'),
   readFile(new URL('../marketscope/tests/fixtures/session_fixtures.json', import.meta.url), 'utf8').then(JSON.parse),
 ]);
 
@@ -82,10 +83,13 @@ async function workspace({ offline = false, candlesUnavailable = false, sessionS
     CSS: { escape: value => String(value).replace(/[&]/g, '\\&') },
     setTimeout: () => 1, clearTimeout: () => {}, setInterval: () => 1,
     requestAnimationFrame: () => {},
+    ResizeObserver: class { observe() {} unobserve() {} disconnect() {} },
   });
+  const chartModule = new vm.SourceTextModule(historicalChart, { context, identifier: 'historical-chart.js' });
   const apiModule = new vm.SourceTextModule(adapter, { context, identifier: 'workspace-api.js' });
   const uiModule = new vm.SourceTextModule(controller + '\nexport {state,refresh,navigate,setMode,setTimeframe,openDetail,hydrateStock,localBrief};', { context, identifier: 'workspace.js' });
   await uiModule.link(async specifier => {
+    if (specifier === './historical-chart.js') return chartModule;
     assert.equal(specifier, './workspace-api.js');
     return apiModule;
   });
