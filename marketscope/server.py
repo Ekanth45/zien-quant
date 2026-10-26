@@ -182,11 +182,11 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
 
         # Static assets
-        if path in ("/", "/flow", "/flow.html"):
-            self._serve_static_file("flow.html")
+        if path in ("/", "/index.html"):
+            self._serve_static_file("workspace.html")
             return
-        elif path == "/index.html":
-            self._serve_static_file("index.html")
+        elif path in ("/flow", "/flow.html"):
+            self._serve_static_file("flow.html")
             return
         elif path.startswith("/static/"):
             rel_path = path[len("/static/"):]
@@ -878,6 +878,12 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
                 return
 
         cfg = self.db.get_latest_config() or DEFAULT_CONFIG
+        # Reject unknown symbols before a feed outage can mask a missing symbol.
+        # Keep catalogue entries and owner-tracked symbols available offline.
+        known_symbols = cfg.get("monitored_symbols", [])
+        if symbol not in STOCK_CATALOGUE and symbol not in known_symbols and not get_stock_database().get_stock(symbol):
+            self._send_json({"error": f"Symbol '{symbol}' not found in active universe."}, status=404)
+            return
         snapshot = None
         state_info = get_session_state(candle_archive=get_candle_archive(), db_manager=self.db)
         session_state = state_info.get("session_state")

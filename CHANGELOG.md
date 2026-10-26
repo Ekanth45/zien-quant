@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-26
+
+### Added
+- **Reference workspace design**: A responsive Zien Quant frontend based on `finance reff/outputs/marketscope/static/`, with sidebar navigation, market overview, scanner, watchlist, stock details, owner controls, and the Laya assistant.
+- **Dedicated workspace assets**: The new interface uses `workspace.html`, `workspace.css`, `workspace.js`, and `workspace-api.js`, allowing the previous terminals to remain available.
+
+### Changed
+- `/` and `/index.html` now open the new workspace. The existing Flow River stays at `/flow` and `/flow.html`; legacy terminal routes and backend APIs are preserved.
+- The reference design is connected to the repository's existing real-data APIs. Auto and previous-session views display received or archived observations, with explicit unavailable states when data is missing.
+
+### Fixed
+- Unknown analysis symbols return HTTP 404 before live-feed retrieval, so an upstream outage cannot incorrectly report a missing symbol as a feed failure.
+
 ## [0.1.0] - 2026-10-26
 
 ### Added
