@@ -82,6 +82,7 @@ function normalizeSetup(decision) {
     ...decision,
     type: action.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
     action,
+    direction: decision.direction ?? (decision.signal_type === 'BUY' ? 'long' : decision.signal_type === 'SELL' ? 'short' : 'neutral'),
     entry: finite(decision.entry ?? decision.entry_price ?? decision.entry_low),
     entry_low: finite(decision.entry_low),
     entry_high: finite(decision.entry_high),

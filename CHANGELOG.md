@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2026-10-26
 
+Development checks include Node DOM/API regression tests in CI. Trajectory gaps stay gaps, selected live candle history has a bounded refresh cache, and confirmed charts exclude open candles.
+
 ### Added
 - **Reference workspace design**: A responsive Zien Quant frontend based on `finance reff/outputs/marketscope/static/`, with sidebar navigation, market overview, scanner, watchlist, stock details, owner controls, and the Laya assistant.
 - **Dedicated workspace assets**: The new interface uses `workspace.html`, `workspace.css`, `workspace.js`, and `workspace-api.js`, allowing the previous terminals to remain available.

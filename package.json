@@ -1,0 +1,13 @@
+{
+  "name": "zien-quant-frontend-tests",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Development-only DOM and API contract tests; no frontend runtime dependencies.",
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/workspace-api.test.mjs tests/workspace-ui.test.mjs"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.12"
+  }
+}

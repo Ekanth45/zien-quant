@@ -35,3 +35,16 @@ The interface exposes owner actions through the existing authentication and auth
 ## Verification
 
 `marketscope/tests/test_workspace_routes.py` checks the new homepage aliases, preserved terminal routes, and static assets over local HTTP without initializing a feed, candle archive, or database. It also covers deterministic unknown-symbol analysis validation, valid-symbol feed failures, and tracked-symbol handling with stubbed services.
+
+### Frontend development checks
+
+Node.js 22 or newer is only required for frontend regression checks. The running website still serves plain local HTML, CSS and JavaScript with no package installation.
+
+```sh
+npm ci --ignore-scripts
+npm test
+```
+
+The DOM tests execute the actual controller against the existing test fixture API contract. They check startup, risk-qualified cards, scanner filtering, watchlist persistence, historical chart selection, confirmed-view gating, unavailable data, trajectory gaps and bounded live-history caching. API tests verify the normalization and authentication boundary. Both run in CI alongside the Python suite.
+
+The visual design was ported directly from the supplied reference CSS and shell. Interactive browser visual inspection was unavailable because local browser control was disabled in the authoring environment; DOM checks do not certify pixel layout. No production brokerage connection or local-model inference was verified for this frontend release.
