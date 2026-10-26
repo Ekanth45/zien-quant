@@ -58,6 +58,13 @@ from security import (
 )
 from signal_journal import SignalJournal
 from candle_archive import get_candle_archive
+from fyers_history import (
+    FyersHistoryAuthError,
+    FyersHistoryError,
+    FyersHistoryNotConfigured,
+    FyersHistoryRateLimitError,
+    get_fyers_history_provider,
+)
 try:
     from flow_engine import build_flow_payload
 except ImportError:
@@ -83,6 +90,7 @@ rate_limiter_llm = RateLimiter(limit=6, window_sec=60)
 rate_limiter_llm_auth = RateLimiter(limit=60, window_sec=60)
 rate_limiter_track = RateLimiter(limit=10, window_sec=60)
 rate_limiter_export = RateLimiter(limit=5, window_sec=60)
+rate_limiter_history = RateLimiter(limit=8, window_sec=60)
 server_start_time = time.time()
 
 
@@ -216,6 +224,16 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             self._handle_market(query)
         elif path == "/api/stock":
             self._handle_stock(query)
+        elif path == "/api/historical/symbols":
+            self._handle_historical_symbols(query)
+        elif path == "/api/historical/candles":
+            if not rate_limiter_history.is_allowed(client_ip):
+                self._send_rate_limited(
+                    retry_after=rate_limiter_history.retry_after(client_ip),
+                    detail="Historical chart requests are limited to 8 per minute.",
+                )
+                return
+            self._handle_historical_candles(query)
         elif path == "/api/health":
             self._handle_health()
         elif path == "/api/admin":
@@ -590,6 +608,42 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
 
     def _handle_market_schedule(self) -> None:
         self._send_json(get_market_schedule_info())
+
+    def _handle_historical_symbols(self, query: Dict[str, List[str]]) -> None:
+        search = query.get("q", [""])[0].strip()[:80]
+        try:
+            limit = min(25, max(1, int(query.get("limit", ["15"])[0])))
+        except (TypeError, ValueError):
+            limit = 15
+        try:
+            result = get_fyers_history_provider().search_instruments(search, limit=limit)
+        except FyersHistoryError as exc:
+            self._send_json({"error": "fyers_symbol_search_unavailable", "detail": str(exc)}, status=503)
+            return
+        self._send_json(result)
+
+    def _handle_historical_candles(self, query: Dict[str, List[str]]) -> None:
+        provider = get_fyers_history_provider()
+        try:
+            result = provider.get_candles(
+                symbol=query.get("symbol", [""])[0],
+                start=query.get("from", [""])[0],
+                end=query.get("to", [""])[0],
+                resolution=query.get("resolution", ["D"])[0],
+            )
+        except FyersHistoryNotConfigured as exc:
+            self._send_json({"error": "fyers_not_configured", "detail": str(exc)}, status=503)
+            return
+        except FyersHistoryAuthError as exc:
+            self._send_json({"error": "fyers_auth_error", "detail": str(exc)}, status=503)
+            return
+        except FyersHistoryRateLimitError as exc:
+            self._send_json({"error": "fyers_rate_limited", "detail": str(exc)}, status=429)
+            return
+        except FyersHistoryError as exc:
+            self._send_json({"error": "fyers_history_unavailable", "detail": str(exc)}, status=503)
+            return
+        self._send_json(result)
 
     def _handle_stock(self, query: Dict[str, List[str]]) -> None:
         symbol = query.get("symbol", ["RELIANCE"])[0].upper()
