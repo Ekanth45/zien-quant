@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Block Terminal · NSE & BSE Flow Intelligence</title>
+  <meta name="description" content="Professional animated flow terminal for Indian NSE equities featuring deterministic directional scores, trajectory flow, and order-block heuristics.">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="terminal-header" role="banner">
+    <div class="header-left">
+      <div class="brand" title="Flow Terminal">
+        <svg class="brand-icon" viewBox="0 0 32 32" width="28" height="28" aria-label="Logo" role="img">
+          <circle cx="16" cy="16" r="14" fill="#08101e" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+          <path d="M6 18 Q 14 20, 20 10 T 28 8" fill="none" stroke="#00e676" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 14 Q 12 12, 18 22 T 28 24" fill="none" stroke="#ff1744" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="feed-pill live-pill" id="feedPill" title="Feed status: Real-time Live Scraper (NSE & BSE)">
+        <span class="pulse-dot"></span>
+        <span id="feedModeLabel">LIVE</span>
+      </div>
+
+      <!-- Quick Global Stock Search in Navigation Bar -->
+      <div class="header-search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" id="headerSearchInput" placeholder="Search 2,600+ stocks... (Ctrl+K)" aria-label="Search NSE & BSE stocks" autocomplete="off">
+        <kbd class="search-kbd">Ctrl+K</kbd>
+        <div class="search-dropdown header-search-dropdown" id="headerSearchDropdown" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Center Control Strip: Timeframes & Mode -->
+    <div class="header-center">
+      <div class="timeframe-group" role="group" aria-label="Candle Timeframe">
+        <button class="tf-btn" data-tf="1">1m</button>
+        <button class="tf-btn active" data-tf="5">5m</button>
+        <button class="tf-btn" data-tf="15">15m</button>
+        <button class="tf-btn" data-tf="60">60m</button>
+      </div>
+      <div class="signal-mode-group" role="group" aria-label="Signal Calculation Mode">
+        <button class="mode-btn active" id="btnModeProvisional" title="Includes forming provisional candle">Provisional</button>
+        <button class="mode-btn" id="btnModeConfirmed" title="Calculates on closed candles only">Confirmed</button>
+      </div>
+    </div>
+
+    <!-- Header Right Controls -->
+    <div class="header-right">
+      <!-- Integrated Market Session & IST Clock Widget -->
+      <div class="header-market-clock" id="marketCountdownPill" title="NSE & BSE Hours: Mon-Fri 09:15 - 15:30 IST. Click to view schedule.">
+        <div class="mkt-status-chip closed" id="mktStatusChip">
+          <span class="mkt-pulse-dot" id="mktPulseDot"></span>
+          <span class="mkt-status-text" id="mktStatusText">CLOSED</span>
+        </div>
+        <div class="mkt-countdown-val" id="mktCountdownTimer">Opens in --:--:--</div>
+        <div class="clock-divider">|</div>
+        <div class="clock-display" id="clockDisplay" title="Indian Standard Time (IST)">09:15:00 IST</div>
+      </div>
+
+      <!-- Quick Action Tool Group -->
+      <div class="header-tool-group">
+        <button class="icon-btn" id="btnPause" title="Pause / Resume Live Feed Stream" aria-label="Pause Feed">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path id="pauseIconPath" d="M6 4h4v16H6zm8 0h4v16h-4z"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btnMotion" title="Toggle Flow Animation Packets" aria-label="Toggle Animation">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.17-6.83l-2.83 2.83m-8 8l-2.83 2.83m0-13.66l2.83 2.83m8 8l2.83 2.83"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btnTheme" title="Toggle Dark / Light Appearance" aria-label="Toggle Theme">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Laya AI Copilot Button -->
+      <button class="pill-btn ai-copilot-nav-btn" id="btnOpenCopilot" title="Ask Laya AI Copilot (Local LLM)">
+        <span class="ai-sparkle">⚡</span>
+        <span class="btn-lbl">Laya AI</span>
+      </button>
+
+      <!-- Utility Menu Buttons -->
+      <div class="header-util-group">
+        <button class="pill-btn mini" id="btnExport" title="Export CSV Data">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span class="btn-lbl">Export</span>
+        </button>
+        <button class="pill-btn mini" id="btnMethodology" title="View Calculation Formulas & Disclaimers">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <span class="btn-lbl">Formula</span>
+        </button>
+        <button class="pill-btn mini secondary" id="btnSettings" title="Owner Settings & Access">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span class="btn-lbl" id="settingsBtnLabel">Console</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Market Breadth Summary Bar -->
+  <section class="summary-bar" aria-label="Market Breadth">
+    <div class="summary-left-group">
+      <div class="summary-item total">
+        <span class="lbl">Universe:</span>
+        <span class="val" id="cntTotal">2,613</span>
+      </div>
+      <div class="summary-pill buy">
+        <span class="dot"></span>
+        <span class="lbl">BULLISH:</span>
+        <span class="val" id="cntBuy">0</span>
+      </div>
+      <div class="summary-pill sell">
+        <span class="dot"></span>
+        <span class="lbl">BEARISH:</span>
+        <span class="val" id="cntSell">0</span>
+      </div>
+      <div class="summary-pill neutral">
+        <span class="dot"></span>
+        <span class="lbl">NEUTRAL:</span>
+        <span class="val" id="cntNeutral">0</span>
+      </div>
+    </div>
+
+    <div class="summary-center-group" title="Bullish vs Bearish ratio in active universe">
+      <div class="breadth-meter-container">
+        <div class="breadth-meter-labels">
+          <span id="breadthBullPct">50% Bull</span>
+          <span id="breadthBearPct">50% Bear</span>
+        </div>
+        <div class="breadth-meter">
+          <div class="breadth-bar-bull" id="breadthBull" style="width: 50%;"></div>
+          <div class="breadth-bar-bear" id="breadthBear" style="width: 50%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-right-group">
+      <div class="summary-item market-session-summary" id="summaryMarketSession" title="NSE & BSE Trading Hours: Mon-Fri 09:15 to 15:30 IST. Click for schedule.">
+        <span class="session-indicator-icon">⏱️</span>
+        <span class="lbl">Session:</span>
+        <span class="val" id="summarySessionText">Market Closed · Opens in --:--:--</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Laya AI Market Pulse Section -->
+  <section class="laya-pulse-section" id="layaPulseSection" aria-label="Laya AI Market Pulse">
+    <div class="pulse-container">
+      <div class="pulse-badge-block">
+        <span class="pulse-glow-dot"></span>
+        <div class="pulse-labels">
+          <span class="pulse-title">LAYA AI MARKET PULSE</span>
+          <span class="pulse-regime-tag" id="pulseRegimeTag">BULLISH MOMENTUM</span>
+        </div>
+      </div>
+      <div class="pulse-summary-block">
+        <p class="pulse-summary-text" id="pulseSummaryText">
+          Synthesizing real-time NSE breadth, sector leadership, and order flow using local LLM (gemma4:12b)...
+        </p>
+      </div>
+      <div class="pulse-actions-block">
+        <span class="pulse-model-lbl" id="pulseModelLabel">Local LLM · gemma4:12b</span>
+        <button class="pulse-refresh-btn" id="btnRefreshPulse" title="Synthesize Fresh Market Pulse">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Terminal Layout: Order Block Terminal Dual-Pane Architecture -->
+  <main class="terminal-main" id="mainContent">
+    <!-- Dual-Pane Master Layout (Matching Order Block Terminal Reference) -->
+    <div class="terminal-dual-pane">
+      <!-- LEFT PANE: Order Block Trajectories Canvas (~46% width) -->
+      <section class="orderblock-canvas-pane" aria-label="Order Block Trajectories Flow Terminal">
+        <!-- Top Mini Breadth Histogram -->
+        <div class="canvas-top-breadth">
+          <div class="breadth-hist-wrap">
+            <span class="hist-label bear">▼ BEARISH</span>
+            <div class="hist-bars-left" id="histBarsBear">
+              <!-- Mini red distribution bars -->
+            </div>
+            <span class="hist-center-zero">•</span>
+            <div class="hist-bars-right" id="histBarsBull">
+              <!-- Mini green distribution bars -->
+            </div>
+            <span class="hist-label bull">▲ BULLISH</span>
+          </div>
+          <div class="canvas-subtitle-tag">Order Block terminal &bull; Intraday Flow</div>
+        </div>
+
+        <div class="canvas-layout-frame">
+          <!-- Left Indicator Rail (Green / Red vertical bar with 0.0 marker) -->
+          <div class="canvas-left-rail">
+            <div class="rail-bar-top" title="Bullish Space"></div>
+            <div class="rail-zero-tick">0.0</div>
+            <div class="rail-bar-bot" title="Bearish Space"></div>
+          </div>
+
+          <!-- Canvas Wrapper -->
+          <div class="canvas-wrapper" id="canvasWrapper">
+            <svg id="trajectoriesSvg" viewBox="0 0 1000 500" preserveAspectRatio="none" role="img" aria-label="Interactive Stock Trajectories Chart">
+              <defs>
+                <linearGradient id="bullGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#00b0ff" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#00e676" stop-opacity="1"/>
+                </linearGradient>
+                <linearGradient id="bearGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#c51162" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#ff1744" stop-opacity="1"/>
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                  <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                </filter>
+                <filter id="obGlow" x="-10%" y="-10%" width="120%" height="120%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                  <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                </filter>
+              </defs>
+              <!-- Background Grid and Zero Axis -->
+              <g id="svgGrid"></g>
+              <g id="svgZeroAxis"></g>
+              <!-- Glowing Cyan Order Block Ray Levels -->
+              <g id="svgOrderBlockRays"></g>
+              <!-- Trajectory Paths -->
+              <g id="svgTrajectories"></g>
+              <!-- Animated Flow Particles -->
+              <g id="svgParticles"></g>
+              <!-- Vertical Scanning Gate & Connector Fibers -->
+              <g id="svgGate"></g>
+              <!-- Endpoint Labels -->
+              <g id="svgEndpoints"></g>
+              <!-- Crosshair Hover Guide -->
+              <g id="svgCrosshair" style="display: none;"></g>
+            </svg>
+
+            <!-- Bottom Time Axis Labels -->
+            <div class="canvas-time-axis">
+              <span>09:15</span>
+              <span>11:00</span>
+              <span>13:00</span>
+              <span class="gate-time-label">15:15:30</span>
+            </div>
+
+            <!-- Floating Stock Situation Panel (HUD) -->
+            <div class="hud-panel" id="hudPanel" style="display: none;" role="tooltip">
+              <div class="hud-ob-badge">Order Block terminal</div>
+              <div class="hud-header">
+                <div class="hud-identity">
+                  <span class="hud-sym" id="hudSym">RELIANCE</span>
+                  <span class="hud-name" id="hudName">Reliance Industries</span>
+                </div>
+                <span class="hud-signal-badge" id="hudBadge">LONG BUILD-UP</span>
+              </div>
+              <div class="hud-price-row">
+                <span class="hud-price" id="hudPrice">₹2,450.00</span>
+                <span class="hud-chg" id="hudChg">+1.42%</span>
+              </div>
+              <div class="hud-spark-box">
+                <svg id="hudSparkline" viewBox="0 0 160 36"></svg>
+              </div>
+              <!-- Algorithmic AI Decision Strip in HUD -->
+              <div class="hud-ai-decision" id="hudAiBox">
+                <div class="ai-act-pill" id="hudAiAction">BREAKOUT LONG</div>
+                <div class="ai-meta-row">
+                  <span>SL: <strong id="hudAiSl">₹0</strong></span>
+                  <span>T1: <strong id="hudAiT1">₹0</strong></span>
+                  <span class="ai-rr-tag" id="hudAiRr">R:R 1:2.4</span>
+                </div>
+              </div>
+              <div class="hud-metrics-grid">
+                <div class="hud-metric">
+                  <span class="m-lbl">Score:</span>
+                  <span class="m-val score" id="hudScore">74</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="m-lbl">RSI(14):</span>
+                  <span class="m-val" id="hudRsi">62.4</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="m-lbl">RVOL:</span>
+                  <span class="m-val" id="hudRvol">1.45x</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="m-lbl">VWAP:</span>
+                  <span class="m-val" id="hudVwap">₹2,438.10</span>
+                </div>
+              </div>
+              <div class="hud-footer">
+                <span class="hud-time" id="hudTime">Updated 09:15 IST</span>
+                <span class="hud-hint">Click for full chart</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT PANE: Dual Build-Up Zones (Bullish Top, Bearish Bottom) (~54% width) -->
+      <section class="buildup-zones-pane" aria-label="Order Block Long and Short Build-Up Zones">
+        <!-- TOP: Bullish Zone (Long Build-Up) -->
+        <div class="zone-card-container bull-zone">
+          <div class="zone-header">
+            <div class="zone-title-wrap">
+              <span class="zone-bullet bull"></span>
+              <span class="zone-title-text">LONG BUILD-UP</span>
+              <span class="zone-subtitle">Order-Block Absorption &bull; Bullish Flow</span>
+            </div>
+          </div>
+          <div class="zone-content-split">
+            <!-- 8x Long Build-Up Cards Matrix -->
+            <div class="matrix-grid" id="buyTilesContainer">
+              <!-- Dynamically populated 8 long build-up cards -->
+            </div>
+            <!-- 3x Hero Bullish Cards -->
+            <div class="hero-column" id="spotlightBuyContainer">
+              <!-- Dynamically populated 3 hero cards with VWAP chart and Zone slider -->
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM: Bearish Zone (Short Build-Up) -->
+        <div class="zone-card-container bear-zone">
+          <div class="zone-header">
+            <div class="zone-title-wrap">
+              <span class="zone-bullet bear"></span>
+              <span class="zone-title-text">SHORT BUILD-UP</span>
+              <span class="zone-subtitle">Order-Block Distribution &bull; Bearish Flow</span>
+            </div>
+          </div>
+          <div class="zone-content-split">
+            <!-- 8x Short Build-Up Cards Matrix -->
+            <div class="matrix-grid" id="sellTilesContainer">
+              <!-- Dynamically populated 8 short build-up cards -->
+            </div>
+            <!-- 3x Hero Bearish Cards -->
+            <div class="hero-column" id="spotlightSellContainer">
+              <!-- Dynamically populated 3 hero cards with VWAP chart and Zone slider -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Sector Performance Strip -->
+    <section class="sector-strip" aria-label="Sector Overview">
+      <div class="section-title-strip">
+        <h3>SECTOR BREADTH</h3>
+        <span class="caption">Averaged intraday movement across tracked companies</span>
+      </div>
+      <div class="sector-chips" id="sectorChipsContainer">
+        <!-- Sector performance badges -->
+      </div>
+    </section>
+
+    <!-- Full Market Scanner & Heatmap -->
+    <section class="scanner-section" aria-label="Stock Scanner and Table">
+      <div class="scanner-header">
+        <div class="scanner-title-area">
+          <h3>NSE & BSE FLOW SCANNER</h3>
+          <span class="caption" id="scannerCaption">Live real-time indicators across 2,600+ NSE & BSE equities</span>
+        </div>
+        <div class="scanner-filters">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="searchInput" placeholder="Search 2,600+ stocks (e.g. RELIANCE, ZOMATO, SUZLON)..." aria-label="Search stocks" autocomplete="off">
+            <div class="search-dropdown" id="searchDropdown" style="display:none;"></div>
+          </div>
+          <div class="filter-tabs" role="tablist">
+            <button class="tab-btn active" data-filter="all">All</button>
+            <button class="tab-btn" data-filter="buy">Bullish</button>
+            <button class="tab-btn" data-filter="sell">Bearish</button>
+            <button class="tab-btn" data-filter="neutral">Neutral</button>
+            <button class="tab-btn" data-filter="watchlist">★ Watchlist</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="market-table" id="marketTable">
+          <thead>
+            <tr>
+              <th class="th-fav">★</th>
+              <th class="sortable" data-sort="symbol">Symbol</th>
+              <th class="sortable" data-sort="name">Company</th>
+              <th class="sortable" data-sort="sector">Sector</th>
+              <th class="sortable text-right" data-sort="price">Price (₹)</th>
+              <th class="sortable text-right" data-sort="change_pct">Day %</th>
+              <th class="sortable text-right" data-sort="open_change_pct">Open %</th>
+              <th class="sortable" data-sort="score">Score</th>
+              <th>Signal</th>
+              <th class="sortable text-right" data-sort="rsi">RSI(14)</th>
+              <th class="sortable text-right" data-sort="rvol">RVOL</th>
+              <th class="text-right">VWAP</th>
+              <th class="text-right">Support / Resist</th>
+              <th>Order Blocks</th>
+              <th>⚡ AI Decision Setup</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="marketTableBody">
+            <!-- Dynamically populated table rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer Disclaimer -->
+  <footer class="terminal-footer">
+    <div class="footer-content">
+      <div class="disclaimer-text">
+        <strong>Research Terminal Notice:</strong> Algorithmic directional scores, BUY/SELL signals, and order block heuristics are deterministic technical indicators for educational and research purposes only. Real-time market analytics directly scraped from National Stock Exchange (NSE) and Bombay Stock Exchange (BSE).
+      </div>
+      <div class="footer-links">
+        <span>Order Block Terminal v2.0.0</span>
+        <span>•</span>
+        <span>IST 09:15 – 15:30 Session</span>
+        <span>•</span>
+        <a href="#methodology" id="linkMethodologyFooter">Methodology & Formula</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Company Detail Modal with Large Candlestick Chart -->
+  <div class="modal-overlay" id="chartModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalStockTitle">
+    <div class="modal-container chart-modal-content">
+      <div class="modal-header">
+        <div class="modal-stock-info">
+          <h2 id="modalStockTitle">RELIANCE · Reliance Industries</h2>
+          <span class="sector-tag" id="modalSector">Energy</span>
+          <span class="signal-tag buy" id="modalSignalBadge">BUY · Score 74</span>
+        </div>
+        <div class="modal-chart-controls">
+          <div class="timeframe-group mini" id="modalTfGroup">
+            <button class="tf-btn" data-tf="1">1m</button>
+            <button class="tf-btn active" data-tf="5">5m</button>
+            <button class="tf-btn" data-tf="15">15m</button>
+            <button class="tf-btn" data-tf="60">60m</button>
+          </div>
+          <button class="close-btn" id="btnCloseChartModal" aria-label="Close chart">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body-split">
+        <!-- Interactive SVG Candlestick Chart Area -->
+        <div class="modal-chart-area">
+          <div class="chart-toolbar">
+            <div class="overlay-toggles">
+              <label class="chk-label"><input type="checkbox" id="chkAiLevels" checked> <span>⚡ AI Levels (SL/Targets)</span></label>
+              <label class="chk-label"><input type="checkbox" id="chkEma" checked> <span>EMA (9/21)</span></label>
+              <label class="chk-label"><input type="checkbox" id="chkVwap" checked> <span>VWAP</span></label>
+              <label class="chk-label"><input type="checkbox" id="chkSupRes" checked> <span>Support / Resistance</span></label>
+              <label class="chk-label"><input type="checkbox" id="chkZones" checked> <span>Order Blocks</span></label>
+            </div>
+            <div class="zoom-controls">
+              <button class="zoom-btn" id="btnZoomIn" title="Zoom In">+</button>
+              <button class="zoom-btn" id="btnZoomOut" title="Zoom Out">&minus;</button>
+              <button class="zoom-btn" id="btnZoomReset" title="Reset Zoom">Reset</button>
+            </div>
+          </div>
+
+          <div class="svg-candle-container" id="candleChartWrapper">
+            <svg id="candlestickSvg" viewBox="0 0 850 420" preserveAspectRatio="none" role="img" aria-label="Candlestick Chart">
+              <!-- Grid & Levels -->
+              <g id="chartGrid"></g>
+              <g id="chartZones"></g>
+              <g id="chartAiLevels"></g>
+              <g id="chartCandles"></g>
+              <g id="chartIndicators"></g>
+              <g id="chartVolume"></g>
+              <g id="chartCrosshair" style="display: none;"></g>
+            </svg>
+            <div class="candle-inspect-tooltip" id="candleTooltip" style="display: none;"></div>
+          </div>
+        </div>
+
+        <!-- Technical Diagnostics Sidebar -->
+        <aside class="modal-diagnostics">
+          <!-- Algorithmic AI Decision Copilot Card -->
+          <div class="diag-card ai-decision-card">
+            <div class="ai-card-header">
+              <span class="ai-badge-pulse">⚡ LAYA AI COPILOT</span>
+              <span class="ai-conviction-pill" id="diagAiConviction">92% Conviction</span>
+            </div>
+            <div class="ai-action-banner" id="diagAiAction">BREAKOUT LONG</div>
+            <div class="ai-levels-grid">
+              <div class="ai-level-box entry">
+                <span class="lvl-label">Entry Range</span>
+                <span class="lvl-price" id="diagAiEntry">₹2,448 - ₹2,452</span>
+              </div>
+              <div class="ai-level-box sl">
+                <span class="lvl-label">Stop-Loss (SL)</span>
+                <span class="lvl-price" id="diagAiSl">₹2,420.00</span>
+              </div>
+              <div class="ai-level-box t1">
+                <span class="lvl-label">Target 1 (1:1.5+)</span>
+                <span class="lvl-price" id="diagAiT1">₹2,485.00</span>
+              </div>
+              <div class="ai-level-box t2">
+                <span class="lvl-label">Target 2 (Runner)</span>
+                <span class="lvl-price" id="diagAiT2">₹2,510.00</span>
+              </div>
+            </div>
+            <div class="ai-rr-row">
+              <span>Risk/Reward: <strong id="diagAiRr">1 : 2.4</strong></span>
+              <span class="ai-risk-pts" id="diagAiRiskPts">Risk: ₹30 | Reward: ₹72</span>
+            </div>
+            <p class="ai-rationale-text" id="diagAiRationale">
+              Bullish breakout structure confirmed above VWAP. Order flow aligns with upward trend momentum.
+            </p>
+            <ul class="ai-factors-list" id="diagAiFactors">
+              <!-- Dynamically populated factor bullets -->
+            </ul>
+
+            <!-- Local LLM Deep Synthesis Trigger & Output Box -->
+            <button class="btn-laya-deep-analyze" id="btnLayaDeepAnalyze">
+              <span class="btn-icon">🧠</span>
+              <span class="btn-text" id="btnLayaDeepText">Institutional Briefing (Local LLM)</span>
+            </button>
+            <div class="laya-llm-briefing-box" id="layaLlmBriefingBox" style="display: none;">
+              <div class="llm-brief-header">
+                <span class="llm-model-tag" id="layaLlmModelTag">gemma4:12b (Local Ollama)</span>
+                <span class="llm-source-tag" id="layaLlmSourceTag">Verified</span>
+              </div>
+              <div class="llm-brief-content" id="layaLlmBriefContent"></div>
+            </div>
+          </div>
+
+          <div class="diag-card">
+            <h4>SCORE BREAKDOWN</h4>
+            <div class="score-dial">
+              <div class="score-number" id="diagScore">74</div>
+              <div class="score-type" id="diagSignal">BULLISH / BUY</div>
+            </div>
+            <div class="contrib-list">
+              <div class="contrib-row">
+                <span>EMA Trend (Fast 9 / Slow 21):</span>
+                <span class="pos" id="diagTrend">+17.5</span>
+              </div>
+              <div class="contrib-row">
+                <span>5-Bar Momentum:</span>
+                <span class="pos" id="diagMom">+15.0</span>
+              </div>
+              <div class="contrib-row">
+                <span>VWAP Distance:</span>
+                <span class="pos" id="diagVwap">+10.0</span>
+              </div>
+              <div class="contrib-row">
+                <span>RSI(14) Offset:</span>
+                <span class="pos" id="diagRsi">+7.5</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="diag-card">
+            <h4>KEY LEVELS & VOLUME</h4>
+            <div class="stat-pair">
+              <span class="k">Rolling Resistance:</span>
+              <span class="v" id="diagRes">₹2,465.00</span>
+            </div>
+            <div class="stat-pair">
+              <span class="k">Session VWAP:</span>
+              <span class="v" id="diagVwapLevel">₹2,438.10</span>
+            </div>
+            <div class="stat-pair">
+              <span class="k">Rolling Support:</span>
+              <span class="v" id="diagSup">₹2,415.00</span>
+            </div>
+            <div class="stat-pair">
+              <span class="k">Relative Volume (RVOL):</span>
+              <span class="v" id="diagRvol">1.45x</span>
+            </div>
+          </div>
+
+          <div class="diag-card">
+            <h4>ACTIVE ORDER BLOCKS</h4>
+            <div class="zones-summary" id="diagZonesList">
+              <!-- Dynamically populated zones -->
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Methodology & Formula Modal -->
+  <div class="modal-overlay" id="methodologyModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalMethodologyTitle">
+    <div class="modal-container info-modal-content">
+      <div class="modal-header">
+        <h2 id="modalMethodologyTitle">MarketScope Calculation Methodology & Heuristics</h2>
+        <button class="close-btn" id="btnCloseMethodologyModal">&times;</button>
+      </div>
+      <div class="modal-body-scroll">
+        <h3>1. Directional Composite Score (0 to 100)</h3>
+        <p>The score synthesizes trend separation, short-term momentum, volume-weighted anchor, and oscillation:</p>
+        <pre class="formula-box">
+trend_contribution     = 35 * clamp( 100 * (Fast_EMA / Slow_EMA - 1) / 0.4 )
+momentum_contribution  = 30 * clamp( 5_Bar_Momentum_% / 1.2 )
+vwap_contribution      = 20 * clamp( 100 * (Close / VWAP - 1) / 0.8 )
+rsi_contribution       = 15 * clamp( (RSI_14 - 50) / 30 )
+
+weighted_sum = trend_contribution + momentum_contribution + vwap_contribution + rsi_contribution
+Score = round( 50 + weighted_sum / 2 )
+        </pre>
+        <ul>
+          <li><strong>BUY / Bullish:</strong> Score &ge; 65</li>
+          <li><strong>SELL / Bearish:</strong> Score &le; 35</li>
+          <li><strong>NEUTRAL:</strong> 35 &lt; Score &lt; 65</li>
+        </ul>
+
+        <h3>2. Rolling-Window RSI(14)</h3>
+        <pre class="formula-box">
+gains  = sum(max(change, 0)) for last 14 bar changes
+losses = sum(max(-change, 0)) for last 14 bar changes
+RSI = 100 - (100 / (1 + gains / losses))
+        </pre>
+
+        <h3>3. Volume-Weighted Average Price (VWAP)</h3>
+        <p>Calculated from 09:15 IST session open: <code>VWAP = &sum;(Typical_Price &times; Volume) / &sum;(Volume)</code> where Typical Price = (High + Low + Close) / 3.</p>
+
+        <h3>4. Order-Block Zone Heuristic</h3>
+        <p>A closed candle breakout beyond the highest high or lowest low of the prior 5 bars anchors an order-block zone on the range of the preceding opposing candle. A bullish zone is invalidated if a later candle closes below its low; a bearish zone is invalidated if a later candle closes above its high.</p>
+
+        <h3>5. Strict Non-Financial Advice Disclaimer</h3>
+        <p class="disclaimer-callout">
+          MarketScope is an automated analytics visualization terminal. Scores do not constitute financial advice, trade signals, or guaranteed outcomes. Real-time market analytics directly scraped from National Stock Exchange (NSE) and Bombay Stock Exchange (BSE).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Market Schedule & Trading Hours Modal -->
+  <div class="modal-overlay" id="scheduleModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalScheduleTitle">
+    <div class="modal-container schedule-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 id="modalScheduleTitle">NSE & BSE Trading Session Schedule</h2>
+          <span class="modal-sub">Indian Standard Time (IST · UTC+05:30)</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseScheduleModal" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body schedule-modal-body">
+        <div class="schedule-hero-banner" id="modalHeroBanner">
+          <div class="schedule-status-col">
+            <span class="schedule-glow-dot" id="modalStatusDot"></span>
+            <div>
+              <div class="schedule-status-badge" id="modalStatusBadge">MARKET CLOSED</div>
+              <div class="schedule-status-desc" id="modalStatusDesc">Exchange session is currently closed</div>
+            </div>
+          </div>
+          <div class="schedule-timer-col">
+            <div class="schedule-timer-label" id="modalTimerLabel">OPENS IN</div>
+            <div class="schedule-timer-display" id="modalTimerDisplay">12h 31m 14s</div>
+            <div class="schedule-timer-target" id="modalTimerTarget">Target: Monday, Oct 26 · 09:15:00 IST</div>
+          </div>
+        </div>
+
+        <div class="schedule-grid">
+          <div class="schedule-card" id="schedCardPre">
+            <div class="sched-card-header">
+              <span class="sched-pill pre">PRE-OPEN</span>
+              <span class="sched-time">09:00 - 09:15 IST</span>
+            </div>
+            <div class="sched-card-title">Order Collection & Price Discovery</div>
+            <p class="sched-card-desc">09:00-09:08: Order entry & cancellation.<br>09:08-09:12: Equilibrium price discovery & matching.<br>09:12-09:15: Buffer transition to normal trading.</p>
+          </div>
+          <div class="schedule-card active-session" id="schedCardNormal">
+            <div class="sched-card-header">
+              <span class="sched-pill open">LIVE OPEN</span>
+              <span class="sched-time">09:15 - 15:30 IST</span>
+            </div>
+            <div class="sched-card-title">Continuous Regular Trading</div>
+            <p class="sched-card-desc">Full liquidity across NSE & BSE equities, ETFs, and index derivatives. Live sub-second order book matching and Laya AI decision triggers.</p>
+          </div>
+          <div class="schedule-card" id="schedCardPost">
+            <div class="sched-card-header">
+              <span class="sched-pill post">POST-CLOSE</span>
+              <span class="sched-time">15:30 - 16:00 IST</span>
+            </div>
+            <div class="sched-card-title">Settlement & Closing Session</div>
+            <p class="sched-card-desc">15:30-15:40: VWAP closing price calculation.<br>15:40-16:00: Post-closing session at fixed settlement closing price.</p>
+          </div>
+        </div>
+
+        <div class="schedule-info-row">
+          <div class="schedule-info-item">
+            <span class="info-k">Exchange Time:</span>
+            <span class="info-v" id="modalIstClock">--:--:-- IST</span>
+          </div>
+          <div class="schedule-info-item">
+            <span class="info-k">Trading Days:</span>
+            <span class="info-v">Monday – Friday</span>
+          </div>
+          <div class="schedule-info-item">
+            <span class="info-k">Exchange:</span>
+            <span class="info-v">NSE & BSE (India)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & Owner Console Modal -->
+  <div class="modal-overlay" id="settingsModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalSettingsTitle">
+    <div class="modal-container settings-modal-content">
+      <div class="modal-header">
+        <h2 id="modalSettingsTitle">Terminal Settings & Owner Console</h2>
+        <button class="close-btn" id="btnCloseSettingsModal">&times;</button>
+      </div>
+      <div class="modal-body-scroll">
+        <!-- Configuration Form -->
+        <form id="settingsForm" class="settings-form">
+          <div class="form-section-title">Indicator Parameters</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cfgFastEma">Fast EMA Period (bars)</label>
+              <input type="number" id="cfgFastEma" min="2" max="50" value="9">
+            </div>
+            <div class="form-group">
+              <label for="cfgSlowEma">Slow EMA Period (bars)</label>
+              <input type="number" id="cfgSlowEma" min="5" max="200" value="21">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cfgRsi">RSI Window (changes)</label>
+              <input type="number" id="cfgRsi" min="5" max="50" value="14">
+            </div>
+            <div class="form-group">
+              <label for="cfgThreshold">Buy Score Cutoff (&ge;)</label>
+              <input type="number" id="cfgThreshold" min="51" max="90" value="65">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cfgRefresh">Refresh Interval (ms)</label>
+              <input type="number" id="cfgRefresh" min="1000" max="10000" step="500" value="2000">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="pill-btn secondary" id="btnPreviewSettings">Preview Sample</button>
+            <button type="submit" class="pill-btn" id="btnSaveSettings">Save Configuration</button>
+          </div>
+        </form>
+
+        <hr class="modal-divider">
+
+        <!-- Owner Sign-in / Status -->
+        <div class="auth-section">
+          <div class="form-section-title">Owner Authentication (Optional)</div>
+          <div id="authStatusBox" class="auth-status-box">
+            <span id="authStatusText">Signed out · Connected to Live NSE & BSE Scraper Feed</span>
+          </div>
+          <form id="loginForm" class="login-form">
+            <div class="form-group">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" placeholder="owner@example.com">
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label for="loginTotp">TOTP 2FA Code (6 digits)</label>
+              <input type="text" id="loginTotp" maxlength="6" placeholder="123456">
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="pill-btn" id="btnLogin">Sign In</button>
+              <button type="button" class="pill-btn secondary" id="btnLogout" style="display:none;">Sign Out</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Laya AI Copilot Chat Drawer -->
+  <aside class="laya-copilot-drawer" id="layaCopilotDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <div class="drawer-title-top">
+          <span class="copilot-sparkle">⚡</span>
+          <h3>Laya AI Copilot</h3>
+          <span class="model-badge">gemma4:12b (Local)</span>
+        </div>
+        <p class="drawer-subtitle">Institutional quantitative analyst & trade rationale copilot</p>
+      </div>
+      <button class="close-btn" id="btnCloseCopilotDrawer" aria-label="Close Copilot">&times;</button>
+    </div>
+    <div class="drawer-context-strip" id="drawerContextStrip">
+      <span class="ctx-label">Active Context:</span>
+      <span class="ctx-stock" id="drawerContextStock">RELIANCE (Active Selection)</span>
+      <span class="ctx-pill" id="drawerContextAction">BREAKOUT LONG</span>
+    </div>
+    <div class="drawer-chat-area" id="drawerChatArea">
+      <div class="chat-msg ai-msg">
+        <div class="chat-avatar">⚡</div>
+        <div class="chat-bubble">
+          <p>Hello! I am <strong>Laya AI</strong>, your local quant analyst and trading copilot powered by <strong>gemma4:12b</strong>. I continuously track VWAP anchors, order blocks, and directional momentum across NSE equities.</p>
+          <p>Ask me about entry strategies, invalidation levels, sector flows, or trade confirmation rules!</p>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-chips">
+      <button class="quick-chip" data-q="Explain why this stock has its current Laya AI action and conviction.">Trade Rationale</button>
+      <button class="quick-chip" data-q="What is the invalidation level and risk-to-reward ratio?">Risk & Levels</button>
+      <button class="quick-chip" data-q="How does current price compare to session VWAP and order blocks?">VWAP & Order Blocks</button>
+      <button class="quick-chip" data-q="Summarize overall NSE market breadth and regime right now.">Market Pulse</button>
+    </div>
+    <form class="drawer-input-row" id="copilotForm">
+      <input type="text" id="copilotTextInput" placeholder="Ask Laya AI anything about this setup..." autocomplete="off">
+      <button type="submit" id="btnCopilotSubmit" title="Send Query">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </form>
+  </aside>
+
+  <!-- Floating Action Button to trigger Copilot anywhere -->
+  <button class="laya-fab" id="layaFab" title="Open Laya AI Copilot (Local LLM)">
+    <span class="fab-icon">⚡</span>
+    <span class="fab-text">Laya AI</span>
+  </button>
+
+  <!-- Main ES Module Script -->
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

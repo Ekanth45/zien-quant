@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      - MS_ENV=production
+      - MS_HOST=0.0.0.0
+      - MS_PORT=8765
+      - MS_DB_PATH=/app/work/runtime/marketscope.db
+    volumes:
+      - app_data:/app/work/runtime
+      - app_backups:/app/work/backups
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      - app
+
+volumes:
+  app_data:
+  app_backups:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:

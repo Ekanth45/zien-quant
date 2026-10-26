@@ -1,0 +1,23 @@
+# MarketScope Order Block Terminal
+# Runtime Requirements
+# ==============================================================================
+# The core MarketScope HTTP server, quantitative signal engine, live scraper,
+# Laya AI integration, and security infrastructure are built using the Python
+# Standard Library only (Python 3.10+ recommended, Python 3.12 verified).
+#
+# No external pip dependencies are required for production server runtime.
+#
+# Standard Library modules utilized:
+# - http.server (ThreadingHTTPServer)
+# - sqlite3 (Database storage & migrations)
+# - urllib.request, urllib.error, urllib.parse (Exchange scraping & Ollama HTTP client)
+# - hashlib, hmac, secrets (Argon2-style PBKDF2 HMAC-SHA256, session tokens, CSRF)
+# - json, csv, io (Data serialization & streaming export)
+# - threading, queue, concurrent.futures (Async LLM worker queue & parallel scraping)
+# - re, time, datetime, math, argparse, logging, pathlib, mimetypes
+#
+# External System Prerequisites:
+# - Ollama (https://ollama.ai) with gemma4:12b model (optional, for local LLM trade synthesis)
+#
+# Optional Development / Test dependencies:
+# (Unit tests run on standard library `unittest`)

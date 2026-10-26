@@ -1,0 +1,8 @@
+# ==============================================================================
+# Zien Quant - Development & Testing Requirements (Optional)
+# ==============================================================================
+# None of these are required to run or test the terminal.
+# The core test suite runs with standard library: python -m unittest
+#
+ruff>=0.4.0
+mypy>=1.10.0

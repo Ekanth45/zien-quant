@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<!-- Cyber Terminal Native Production Stylesheet -->
+<link rel="stylesheet" href="/static/cyber_terminal.css"/>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="/static/tailwind.min.js"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"inverse-surface":"#e5e2e1","inverse-primary":"#8a5100","error-container":"#93000a","primary-container":"#ff9900","surface-tint":"#ffb86f","on-surface":"#e5e2e1","outline":"#a38d7a","on-primary-container":"#653a00","on-secondary":"#00363d","on-surface-variant":"#dbc2ad","on-background":"#e5e2e1","surface-variant":"#353534","on-error-container":"#ffdad6","on-primary":"#4a2800","on-secondary-fixed":"#001f24","surface-container-lowest":"#0e0e0e","surface-container-highest":"#353534","primary":"#ffc082","tertiary-fixed-dim":"#00e55b","on-tertiary-fixed-variant":"#00531b","secondary":"#bdf4ff","secondary-fixed-dim":"#00daf3","tertiary":"#00ec5e","on-error":"#690005","primary-fixed-dim":"#ffb86f","on-primary-fixed":"#2c1600","background":"#131313","tertiary-container":"#00cd50","surface-dim":"#131313","secondary-container":"#00e3fd","error":"#ffb4ab","surface-container-low":"#1c1b1b","on-primary-fixed-variant":"#693c00","primary-fixed":"#ffdcbd","inverse-on-surface":"#313030","tertiary-fixed":"#6bff83","on-secondary-container":"#00616d","on-tertiary-container":"#00501a","surface-container-high":"#2a2a2a","surface":"#131313","on-tertiary":"#003911","outline-variant":"#554434","surface-bright":"#393939","surface-container":"#201f1f","on-tertiary-fixed":"#002107","secondary-fixed":"#9cf0ff","on-secondary-fixed-variant":"#004f58"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xs":"0.125rem","space-lg":"0.75rem","space-xl":"1rem","space-md":"0.5rem","space-sm":"0.25rem","gutter":"0.25rem","margin":"0.25rem"},"fontFamily":{"body-sm":["JetBrains Mono"],"tabular-data":["JetBrains Mono"],"command-line":["JetBrains Mono"],"body-md":["JetBrains Mono"],"label-sm":["JetBrains Mono"],"headline-md":["JetBrains Mono"],"label-lg":["JetBrains Mono"],"headline-xl":["JetBrains Mono"],"label-md":["JetBrains Mono"],"headline-lg":["JetBrains Mono"],"body-lg":["JetBrains Mono"]},"fontSize":{"body-sm":["11px",{"lineHeight":"14px","letterSpacing":"-0.01em","fontWeight":"400"}],"tabular-data":["11px",{"lineHeight":"14px","letterSpacing":"-0.02em","fontWeight":"400"}],"command-line":["13px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"700"}],"body-md":["12px",{"lineHeight":"15px","letterSpacing":"0em","fontWeight":"400"}],"label-sm":["10px",{"lineHeight":"12px","letterSpacing":"0.05em","fontWeight":"600"}],"headline-md":["14px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"600"}],"label-lg":["12px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"700"}],"headline-xl":["20px",{"lineHeight":"24px","letterSpacing":"0.02em","fontWeight":"700"}],"label-md":["11px",{"lineHeight":"13px","letterSpacing":"0.03em","fontWeight":"600"}],"headline-lg":["16px",{"lineHeight":"20px","letterSpacing":"0.02em","fontWeight":"700"}],"body-lg":["13px",{"lineHeight":"16px","letterSpacing":"0em","fontWeight":"400"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased select-none"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest border-b border-outline-variant/60"><div class="h-24 flex flex-col justify-between px-margin py-space-xs"><div class="flex items-center justify-between gap-space-md border-b border-outline-variant/40 pb-space-xs"><div class="flex items-center gap-space-sm"><span class="font-label-lg text-label-lg text-primary-container tracking-wider uppercase bg-surface-container-high px-space-sm py-space-xs border border-outline-variant">BLOOMBERG</span><span class="font-label-sm text-label-sm text-on-surface-variant hidden sm:inline">PROFESSIONAL SERVICE</span></div><div class="flex-1 max-w-3xl flex items-center bg-surface-container-low px-space-sm py-space-xs border border-primary-container"><span class="font-command-line text-command-line text-primary-container mr-space-sm">&gt;</span><input class="w-full bg-transparent font-command-line text-command-line text-primary-container outline-none border-none placeholder-outline" readonly="" spellcheck="false" type="text" value="NIFTY50 Index OB &lt;GO&gt;"/><span class="inline-block w-2 h-3.5 bg-primary-container animate-pulse ml-space-xs"></span><button class="ml-space-sm bg-primary-container text-on-primary-container font-label-sm text-label-sm px-space-md py-space-xs uppercase font-bold hover:bg-surface-tint hover:text-on-primary transition-colors">&lt;GO&gt;</button></div><div class="flex items-center gap-space-md"><div class="hidden xl:flex items-center gap-space-sm font-label-sm text-label-sm text-outline"><span class="flex items-center gap-space-xs text-tertiary"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-ping"></span>B-PIPE NSE DIRECT</span><span class="text-outline-variant">|</span><span>LAT: <span class="text-secondary">0.8ms</span></span><span class="text-outline-variant">|</span><span>QUANT-DESK-01</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="flex items-center justify-between gap-space-xs overflow-x-auto pt-space-xs"><div class="flex items-center gap-space-xs"><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;ESC&gt; CANCEL</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F1&gt; HELP</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F2&gt; GO</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F3&gt; NEWS</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F8&gt; EQUITY</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F10&gt; MONITOR</span><span class="font-label-sm text-label-sm px-space-sm py-space-xs bg-surface-container text-on-surface-variant border border-outline-variant hover:border-primary-container hover:text-primary-container transition-colors cursor-pointer">&lt;F12&gt; PRINT</span></div><div class="flex items-center gap-space-xs text-label-sm font-label-sm text-on-surface-variant"><span class="px-space-xs py-space-xs text-primary-container font-bold">WNDW:</span><button class="px-space-xs py-space-xs hover:bg-surface-container-high hover:text-on-surface">[1: MAIN]</button><button class="px-space-xs py-space-xs hover:bg-surface-container-high hover:text-on-surface">[2: SPLIT]</button><button class="px-space-xs py-space-xs hover:bg-surface-container-high hover:text-on-surface">[4: TILE]</button></div></div></div></header><aside class="fixed left-0 top-24 bottom-6 w-56 bg-surface-container-lowest border-r border-outline-variant/60 flex flex-col justify-between z-40"><div class="p-space-sm"><div class="font-label-sm text-label-sm text-outline uppercase pb-space-sm border-b border-outline-variant/40 flex items-center justify-between"><span>TERMINAL TILES</span><span class="text-primary-container">[F4]</span></div><nav class="mt-space-sm space-y-space-xs flex flex-col" data-active-classes="bg-primary-container text-on-primary-container font-bold border-l-2 border-primary-container"><a aria-current="page" class="px-space-sm py-space-xs transition-all block bg-primary-container text-on-primary-container font-bold border-l-2 border-primary-container" data-path="main-flow" href="#">1: MAIN FLOW</a><a class="text-left px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-l-2 border-transparent transition-all block" data-path="order-blocks" href="#">2: ORDER BLOCKS</a><a class="text-left px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-l-2 border-transparent transition-all block" data-path="delta-matrix" href="#">3: DELTA MATRIX</a><a class="text-left px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-l-2 border-transparent transition-all block" data-path="laya-ai-runtime" href="#">4: LAYA AI RUNTIME</a><a class="text-left px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-l-2 border-transparent transition-all block" data-path="macro-telemetry" href="#">5: MACRO TELEMETRY</a><a class="text-left px-space-sm py-space-xs font-label-md text-label-md text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-l-2 border-transparent transition-all block" data-path="historical-volatility" href="#">6: HISTORICAL VOL</a></nav></div><div class="p-space-sm border-t border-outline-variant/40 space-y-space-xs"><div class="font-label-sm text-label-sm text-outline uppercase">DESK SESSIONS</div><div class="bg-surface-container-low p-space-xs text-tabular-data font-tabular-data border border-outline-variant/30 space-y-space-xs"><div class="flex justify-between"><span class="text-on-surface-variant">CPU RTM:</span><span class="text-tertiary">12.4%</span></div><div class="flex justify-between"><span class="text-on-surface-variant">MEM ALLOC:</span><span class="text-secondary">1.4 GB</span></div><div class="flex justify-between"><span class="text-on-surface-variant">FEED DROPS:</span><span class="text-on-surface">0.00%</span></div></div><div class="pt-space-xs flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant"><span class="hover:text-primary cursor-pointer">SETT</span><span class="hover:text-primary cursor-pointer">AUDIT</span><span class="hover:text-primary cursor-pointer">LOCK</span></div></div></aside><div class="pl-56"><main class="relative pt-24 pb-6 min-h-screen bg-background w-full px-space-sm"><div class="flex flex-col w-full text-on-surface select-none pb- space-y-space-sm">
+<!-- COMMAND BAR & TICKER TELEMETRY STRIP -->
+<div class="w-full bg-surface-container-lowest p-space-xs flex flex-col gap-space-xs shadow-md">
+<!-- Sub-Ribbon Top: Breadcrumb, Mode, Timestamp -->
+<div class="flex items-center justify-between px-space-xs text-label-sm font-label-sm">
+<div class="flex items-center gap-space-sm">
+<span class="bg-primary-container text-on-primary-container px-space-xs font-bold uppercase">EXECUTION</span>
+<span class="text-primary-container font-command-line">NIFTY50 Index OB_FLOW &lt;GO&gt;</span>
+<span class="text-outline-variant">|</span>
+<span class="text-tertiary">BLOOMBERG B-PIPE NSE L3 DIRECT</span>
+<span class="text-outline-variant">|</span>
+<span class="text-secondary">BUFFER: 0 DROPS</span>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant">
+<span>MARKET: <span class="text-tertiary font-bold">OPEN (IST)</span></span>
+<span>REC: <span class="text-on-surface">15:22:18.042</span></span>
+<span class="text-primary font-bold">[NSE COLOCATION RACK 04]</span>
+</div>
+</div>
+<!-- Functions Strip -->
+<div class="flex items-center justify-between bg-surface-container-low px-space-xs py-space-xs">
+<div class="flex items-center gap-space-xs">
+<button class="bg-primary-container text-on-primary-container font-label-sm text-label-sm px-space-sm py-space-xs font-bold">[1] GP: CHART</button>
+<button class="bg-surface-container-high text-primary font-label-sm text-label-sm px-space-sm py-space-xs hover:bg-surface-tint hover:text-on-primary transition-colors">[2] OB: BLOCKS</button>
+<button class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-space-sm py-space-xs hover:text-on-surface transition-colors">[3] VMAP: VWAP</button>
+<button class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-space-sm py-space-xs hover:text-on-surface transition-colors">[4] FLW: DELTA</button>
+<button class="bg-surface-container text-secondary font-label-sm text-label-sm px-space-sm py-space-xs hover:text-on-surface transition-colors">[5] AI: SYNTH</button>
+<button class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm px-space-sm py-space-xs hover:text-on-surface transition-colors">[6] SEC: 2,613</button>
+</div>
+<div class="flex items-center gap-space-lg text-tabular-data font-tabular-data">
+<div>
+<span class="text-outline">VWAP:</span>
+<span class="text-secondary ml-space-xs font-bold">24,790.40</span>
+</div>
+<div>
+<span class="text-outline">BANKNIFTY:</span>
+<span class="text-tertiary ml-space-xs font-bold">52,140.80 (+1.24%)</span>
+</div>
+<div>
+<span class="text-outline">BREADTH:</span>
+<span class="text-tertiary ml-space-xs font-bold">1,742 ADV</span>
+<span class="text-outline">/</span>
+<span class="text-error font-bold">871 DEC</span>
+</div>
+<div>
+<span class="text-outline">FLOW VOL:</span>
+<span class="text-tertiary font-bold">68% BULL</span>
+<span class="text-outline">/</span>
+<span class="text-error font-bold">32% BEAR</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 4-QUADRANT MASTER CONSOLE GRID -->
+<div class="grid grid-cols-12 gap-space-xs w-full">
+<!-- ======================================================== -->
+<!-- QUADRANT 1: TRAJECTORY SWARM & ORDER BLOCK GATE CANVAS  -->
+<!-- ======================================================== -->
+<div class="col-span-12 xl:col-span-7 flex flex-col bg-surface-container-low shadow-md min-h-[460px]">
+<!-- Window Title Strip -->
+<div class="h-6 bg-surface-container-high px-space-sm flex items-center justify-between text-label-sm font-label-sm">
+<div class="flex items-center gap-space-sm">
+<span class="text-primary-container font-bold uppercase">WINDOW 1: NIFTY50 &lt;INDEX&gt; TRAJECTORY &amp; SWARM GATE</span>
+<span class="text-outline-variant">::</span>
+<span class="text-tertiary">L3 ABSORPTION CONVERGENCE</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="bg-surface-container px-space-xs text-secondary font-bold">NSE_FO</span>
+<span class="hover:text-primary-container cursor-pointer">[1M]</span>
+<span class="text-primary-container font-bold">[5M]</span>
+<span class="hover:text-primary-container cursor-pointer">[15M]</span>
+<span class="text-outline-variant">|</span>
+<span class="hover:text-primary-container cursor-pointer">[TILE]</span>
+</div>
+</div>
+<!-- Canvas Interior with HUD -->
+<div class="relative flex-1 bg-surface-container-lowest overflow-hidden flex">
+<!-- Vertical Left Axis Metrics -->
+<div class="w-12 bg-surface-container-lowest/80 flex flex-col justify-between py-space-sm px-space-xs text-label-sm font-tabular-data text-outline select-none">
+<span class="text-tertiary font-bold">+5.0%</span>
+<span class="text-tertiary">+3.5%</span>
+<span class="text-tertiary">+2.0%</span>
+<span class="text-secondary font-bold">+1.2%</span>
+<span class="text-primary-container font-bold">0.00</span>
+<span class="text-error">-1.0%</span>
+<span class="text-error">-2.2%</span>
+<span class="text-error font-bold">-3.0%</span>
+</div>
+<!-- SVG Flow Vector Trajectory Visualizer -->
+<div class="relative flex-1 h-full min-h-[400px]">
+<svg class="w-full h-full" fill="none" preserveaspectratio="none" viewbox="0 0 760 410">
+<!-- Grid lines -->
+<line stroke="#353534" stroke-dasharray="2 3" stroke-width="0.8" x1="0" x2="760" y1="50" y2="50"></line>
+<line stroke="#353534" stroke-dasharray="2 3" stroke-width="0.8" x1="0" x2="760" y1="120" y2="120"></line>
+<line stroke="#ff9900" stroke-opacity="0.4" stroke-width="1" x1="0" x2="760" y1="190" y2="190"></line>
+<line stroke="#353534" stroke-dasharray="2 3" stroke-width="0.8" x1="0" x2="760" y1="260" y2="260"></line>
+<line stroke="#353534" stroke-dasharray="2 3" stroke-width="0.8" x1="0" x2="760" y1="330" y2="330"></line>
+<!-- Supply Zone (Bearish Level) -->
+<rect fill="#ffb4ab" fill-opacity="0.04" height="26" width="760" x="0" y="32"></rect>
+<line stroke="#ffb4ab" stroke-dasharray="4 2" stroke-width="0.75" x1="0" x2="760" y1="32" y2="32"></line>
+<text fill="#ffb4ab" font-family="JetBrains Mono" font-size="9" font-weight="700" x="10" y="48">RESISTANCE SUPPLY CLUSTER: 25,120 [+1.15%]</text>
+<!-- Demand Zone (Electric Cyan Order Block) -->
+<rect fill="#00e3fd" fill-opacity="0.06" height="34" width="760" x="0" y="142"></rect>
+<line stroke="#00e3fd" stroke-dasharray="4 2" stroke-width="1.2" x1="0" x2="760" y1="142" y2="142"></line>
+<line stroke="#00e3fd" stroke-dasharray="2 4" stroke-width="1" x1="0" x2="760" y1="176" y2="176"></line>
+<text fill="#00e3fd" font-family="JetBrains Mono" font-size="9" font-weight="700" x="10" y="162">L3 DEMAND ZONE ORDER BLOCK: 24,780.00 (BUY ABSORPTION)</text>
+<!-- Swarm Gate Focal Vertical Axis -->
+<rect fill="#201f1f" fill-opacity="0.7" height="410" width="30" x="365" y="0"></rect>
+<line stroke="#ff9900" stroke-dasharray="5 3" stroke-width="1.5" x1="380" x2="380" y1="0" y2="410"></line>
+<text fill="#ff9900" font-family="JetBrains Mono" font-size="9" font-weight="700" x="385" y="18">GATE #1</text>
+<!-- Bullish Trajectory Particle Strands (Long Accumulation) -->
+<path d="M 0,190 C 80,185 140,150 220,135 C 290,120 330,110 380,110 C 440,110 520,70 620,65 C 690,62 730,55 760,50" stroke="#00ec5e" stroke-opacity="0.35" stroke-width="0.75"></path>
+<path d="M 0,190 C 90,192 160,165 240,140 C 310,122 350,118 380,110 C 460,95 540,82 660,70 C 710,65 740,60 760,58" stroke="#00ec5e" stroke-opacity="0.45" stroke-width="0.9"></path>
+<path d="M 0,190 C 110,180 180,145 260,125 C 330,110 360,112 380,110 C 470,105 560,90 680,78 C 720,72 750,68 760,65" stroke="#00cd50" stroke-opacity="0.3" stroke-width="0.6"></path>
+<path d="M 0,190 C 120,200 200,160 280,130 C 340,115 365,112 380,110 C 490,100 580,95 760,82" stroke="#00ec5e" stroke-opacity="0.25" stroke-width="0.75"></path>
+<!-- Heavy Prime Bull Trajectory with Glow -->
+<path d="M 0,190 C 70,175 130,130 200,140 C 260,148 310,115 380,110 C 450,105 520,85 590,75 C 650,66 700,60 760,52" stroke="#00ec5e" stroke-linecap="round" stroke-width="2.6"></path>
+<circle cx="380" cy="110" fill="#ff9900" r="4.5"></circle>
+<circle cx="380" cy="110" r="8" stroke="#ff9900" stroke-dasharray="2 2" stroke-width="1.2"></circle>
+<circle cx="760" cy="52" fill="#00ec5e" r="4"></circle>
+<!-- Bearish Trajectory Particle Strands (Short Distribution) -->
+<path d="M 0,190 C 90,195 150,220 230,240 C 300,258 350,265 380,270 C 440,280 530,305 640,335 C 690,348 730,360 760,370" stroke="#ffb4ab" stroke-opacity="0.35" stroke-width="0.8"></path>
+<path d="M 0,190 C 110,205 180,245 260,265 C 320,280 355,275 380,270 C 460,260 550,295 670,320 C 720,330 745,345 760,352" stroke="#ffb4ab" stroke-opacity="0.3" stroke-width="0.6"></path>
+<path d="M 0,190 C 130,185 200,230 280,255 C 330,270 365,268 380,270 C 470,275 580,310 760,340" stroke="#ffb4ab" stroke-opacity="0.25" stroke-width="0.7"></path>
+<!-- Secondary Mean Deviation Line (Cyan VWAP Ribbon) -->
+<path d="M 0,190 C 100,188 200,172 300,165 C 380,160 480,152 580,140 C 670,130 720,125 760,120" stroke="#00daf3" stroke-dasharray="4 2" stroke-width="1.4"></path>
+<text fill="#00daf3" font-family="JetBrains Mono" font-size="8" font-weight="700" x="705" y="116">VWAP 24,790</text>
+</svg>
+<!-- Floating Bloomberg Telemetry HUD (Amber Accent Window) -->
+<div class="absolute top-4 left-16 bg-surface-container-lowest/95 p-space-xs shadow-xl w-64 z-20">
+<div class="bg-primary-container px-space-xs py-space-xs flex justify-between items-center text-on-primary-container font-label-sm text-label-sm font-bold">
+<span>HFT FLOW GATE #1 [INSTITUTIONAL]</span>
+<span class="text-on-primary-container">[ACTIVE]</span>
+</div>
+<div class="p-space-xs space-y-space-xs font-tabular-data text-tabular-data bg-surface-container-lowest">
+<div class="flex justify-between items-center">
+<span class="text-outline">CONVERGENCE:</span>
+<span class="text-tertiary font-bold">24,842.10 IST</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-outline">OI EXPANSION:</span>
+<span class="text-tertiary font-bold">+287.39% [HIGH]</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-outline">DELTA VOL (NET):</span>
+<span class="text-tertiary font-bold">+5,128.56 LOTS</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-outline">BLOCK GATE:</span>
+<span class="text-secondary font-bold">ABSORPTION VALID</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-outline">CONFIDENCE:</span>
+<span class="text-primary font-bold">0.942 [SIGMA 3]</span>
+</div>
+<div class="pt-space-xs flex justify-between gap-space-xs">
+<button class="flex-1 bg-primary-container text-on-primary-container font-label-sm text-label-sm font-bold py-space-xs text-center uppercase hover:bg-surface-tint transition-colors">L3 VERIFY &lt;GO&gt;</button>
+<button class="bg-surface-container-high px-space-sm text-on-surface font-label-sm text-label-sm hover:bg-surface-bright">PING</button>
+</div>
+</div>
+</div>
+<!-- Real-Time Footprint Legend Indicator -->
+<div class="absolute bottom-2 right-3 bg-surface-container-lowest/90 px-space-sm py-space-xs flex items-center gap-space-md text-label-sm font-label-sm">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-on-surface-variant">LONG DELTA SWARM</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-on-surface-variant">SHORT DUMP SKEW</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-on-surface-variant">ORDER BLOCK ANCHOR</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Time Axis Footer Strip -->
+<div class="h-5 bg-surface-container-lowest px-12 flex justify-between items-center text-label-sm font-tabular-data text-outline select-none">
+<span>09:15</span>
+<span>10:30</span>
+<span>11:45</span>
+<span class="text-primary-container font-bold">13:00 (GATE SWARM)</span>
+<span>14:15</span>
+<span class="text-tertiary font-bold">15:15 IST</span>
+<span>15:30</span>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- QUADRANT 2: DUAL BUILD-UP RUNTIME MATRIX (BLOOMBERG)     -->
+<!-- ======================================================== -->
+<div class="col-span-12 xl:col-span-5 flex flex-col bg-surface-container-low shadow-md min-h-[460px]">
+<!-- Header -->
+<div class="h-6 bg-surface-container-high px-space-sm flex items-center justify-between text-label-sm font-label-sm">
+<div class="flex items-center gap-space-sm">
+<span class="text-primary-container font-bold uppercase">WINDOW 2: BUILD-UP CLUSTER MATRIX [LONG/SHORT]</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="text-tertiary font-bold">CUMULATIVE OI: +14.8M</span>
+<span class="hover:text-primary-container cursor-pointer">[FILTER]</span>
+</div>
+</div>
+<!-- Content Split: Long Build-up on top, Short Build-up on bottom -->
+<div class="flex-1 flex flex-col gap-space-xs p-space-xs bg-surface-container-lowest overflow-y-auto">
+<!-- SUB-PANEL A: LONG BUILD-UP RUNTIME -->
+<div class="bg-surface-container p-space-xs flex flex-col gap-space-xs">
+<div class="flex items-center justify-between bg-surface-container-high px-space-xs py-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="bg-tertiary-container text-on-tertiary px-space-xs font-label-sm text-label-sm font-bold">BULL ACCUMULATION</span>
+<span class="text-tabular-data font-tabular-data text-tertiary font-bold">GATE ACTIVE</span>
+</div>
+<div class="flex items-center gap-space-md text-label-sm font-label-sm">
+<span class="text-outline">VWAP: <span class="text-secondary font-bold">389.76</span></span>
+<span class="text-outline">R:R: <span class="text-tertiary font-bold">1:3.8</span></span>
+<span class="text-tertiary-fixed font-bold">[CONFIRMED]</span>
+</div>
+</div>
+<!-- Strikes Cluster Rows -->
+<div class="space-y-space-xs font-tabular-data text-tabular-data">
+<!-- Row 1 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-tertiary font-bold">CE 24900</span>
+<span class="text-outline-variant text-label-sm">ATM+1</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">865.93</span>
+</div>
+<!-- Relative Depth Bar -->
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-tertiary/70" style="width: 78%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-tertiary font-bold">+418.2K OI</span>
+</div>
+<span class="text-tertiary-fixed font-label-sm text-label-sm ml-space-xs font-bold">LONG [0.82]</span>
+</div>
+<!-- Row 2 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-tertiary font-bold">CE 24950</span>
+<span class="text-outline-variant text-label-sm">OTM+1</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">390.55</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-tertiary/60" style="width: 62%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-tertiary font-bold">+295.4K OI</span>
+</div>
+<span class="text-tertiary-fixed font-label-sm text-label-sm ml-space-xs font-bold">LONG [0.74]</span>
+</div>
+<!-- Row 3 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-tertiary font-bold">PE 24800</span>
+<span class="text-outline-variant text-label-sm">ITM-WRT</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">2,072.98</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-tertiary/90" style="width: 94%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-tertiary font-bold">+882.1K OI</span>
+</div>
+<span class="text-tertiary-fixed font-label-sm text-label-sm ml-space-xs font-bold">WRITING</span>
+</div>
+<!-- Row 4 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-tertiary font-bold">PE 24700</span>
+<span class="text-outline-variant text-label-sm">SUPPORT</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">5,005.77</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-tertiary" style="width: 100%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-tertiary font-bold">+1.42M OI</span>
+</div>
+<span class="text-primary-container font-label-sm text-label-sm ml-space-xs font-bold">BASE OB</span>
+</div>
+</div>
+</div>
+<!-- SUB-PANEL B: SHORT BUILD-UP RUNTIME -->
+<div class="bg-surface-container p-space-xs flex flex-col gap-space-xs">
+<div class="flex items-center justify-between bg-surface-container-high px-space-xs py-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="bg-error-container text-on-error-container px-space-xs font-label-sm text-label-sm font-bold">BEAR DISTRIBUTION</span>
+<span class="text-tabular-data font-tabular-data text-error font-bold">SUPPLY TEST</span>
+</div>
+<div class="flex items-center gap-space-md text-label-sm font-label-sm">
+<span class="text-outline">VWAP: <span class="text-secondary font-bold">58.27</span></span>
+<span class="text-outline">R:R: <span class="text-error font-bold">1:2.8</span></span>
+<span class="text-error font-bold">[FADE TRIGGER]</span>
+</div>
+</div>
+<!-- Strikes Cluster Rows -->
+<div class="space-y-space-xs font-tabular-data text-tabular-data">
+<!-- Row 1 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-error font-bold">CE 25200</span>
+<span class="text-outline-variant text-label-sm">RESIST</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">101.02</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-error/70" style="width: 58%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-error font-bold">+520.1K OI</span>
+</div>
+<span class="text-error font-label-sm text-label-sm ml-space-xs font-bold">SHORT [0.65]</span>
+</div>
+<!-- Row 2 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-error font-bold">PE 24500</span>
+<span class="text-outline-variant text-label-sm">FAR OTM</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">5,128.56</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-error/80" style="width: 82%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-error font-bold">+764.2K OI</span>
+</div>
+<span class="text-error font-label-sm text-label-sm ml-space-xs font-bold">LIQUIDATE</span>
+</div>
+<!-- Row 3 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-error font-bold">CE 25100</span>
+<span class="text-outline-variant text-label-sm">CE WRT</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">4,655.33</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-error" style="width: 90%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-error font-bold">+940.5K OI</span>
+</div>
+<span class="text-error font-label-sm text-label-sm ml-space-xs font-bold">CE SUPPLY</span>
+</div>
+<!-- Row 4 -->
+<div class="bg-surface-container-low p-space-xs flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-sm w-36">
+<span class="text-error font-bold">PE 24650</span>
+<span class="text-outline-variant text-label-sm">TRAP PE</span>
+</div>
+<div class="text-right w-20">
+<span class="text-on-surface font-bold">3,319.30</span>
+</div>
+<div class="flex-1 max-w-xs mx-space-sm bg-surface-container-lowest h-3 relative overflow-hidden">
+<div class="h-full bg-error/60" style="width: 44%;"></div>
+</div>
+<div class="text-right w-24">
+<span class="text-error font-bold">+312.8K OI</span>
+</div>
+<span class="text-error font-label-sm text-label-sm ml-space-xs font-bold">FADE CALL</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- QUADRANT 3: 2,613 MASTER EQUITIES SCANNER (BLOOMBERG VIEW)-->
+<!-- ======================================================== -->
+<div class="col-span-12 xl:col-span-8 flex flex-col bg-surface-container-low shadow-md min-h-[380px]">
+<!-- Window Title -->
+<div class="h-6 bg-surface-container-high px-space-sm flex items-center justify-between text-label-sm font-label-sm">
+<div class="flex items-center gap-space-sm">
+<span class="text-primary-container font-bold uppercase">WINDOW 3: NSE/BSE MASTER SCANNER [2,613 SECURITIES ACTIVE]</span>
+<span class="text-outline-variant">::</span>
+<span class="text-on-surface">FILTER: ORDER_BLOCK == "DEMAND" | SCORE &gt; 50</span>
+</div>
+<div class="flex items-center gap-space-md text-on-surface-variant font-tabular-data text-tabular-data">
+<span>MATCHES: <span class="text-primary font-bold">428</span></span>
+<span>LATENCY: <span class="text-tertiary">0.8ms</span></span>
+<button class="bg-surface-container-highest px-space-xs hover:text-primary-container">[EXPORT CSV]</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="flex-1 bg-surface-container-lowest overflow-x-auto">
+<table class="w-full border-collapse font-tabular-data text-tabular-data">
+<thead>
+<tr class="bg-surface-container-high text-on-surface-variant text-label-sm font-label-sm uppercase select-none">
+<th class="py-space-xs px-space-sm text-left">TICKER</th>
+<th class="py-space-xs px-space-sm text-left">SECURITY NAME</th>
+<th class="py-space-xs px-space-sm text-right">LAST (INR)</th>
+<th class="py-space-xs px-space-sm text-right">CHG %</th>
+<th class="py-space-xs px-space-sm text-center">DIR SCORE</th>
+<th class="py-space-xs px-space-sm text-right">VWAP DIST</th>
+<th class="py-space-xs px-space-sm text-right">RVOL</th>
+<th class="py-space-xs px-space-sm text-left">ORDER BLOCK SETUP</th>
+<th class="py-space-xs px-space-sm text-center">GRADE</th>
+<th class="py-space-xs px-space-sm text-center">EXEC</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/20">
+<!-- Ticker Row 1 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-lowest group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>HDFCBANK</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">HDFC BANK LTD</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">1,684.30</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-tertiary">+2.34%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-tertiary" style="width: 88%;"></div>
+</div>
+<span class="text-tertiary font-bold">88</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-tertiary">+1.18%</td>
+<td class="py-space-xs px-space-sm text-right text-secondary">2.84x</td>
+<td class="py-space-xs px-space-sm text-tertiary-fixed font-bold">DEMAND ZONE ABSORPTION</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-tertiary-container text-on-tertiary px-space-xs font-bold text-label-sm font-label-sm">A+</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-primary-container px-space-xs hover:bg-primary-container hover:text-on-primary-container font-label-sm font-bold">&lt;BUY&gt;</button>
+</td>
+</tr>
+<!-- Ticker Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-low/40 group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>RELIANCE</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">RELIANCE IND LTD</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">2,945.75</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-tertiary">+1.08%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-tertiary" style="width: 76%;"></div>
+</div>
+<span class="text-tertiary font-bold">76</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-tertiary">+0.44%</td>
+<td class="py-space-xs px-space-sm text-secondary">1.95x</td>
+<td class="py-space-xs px-space-sm text-secondary font-bold">OB BREAKOUT (VOLUME POOL)</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-surface-container-highest text-secondary px-space-xs font-bold text-label-sm font-label-sm">A</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-primary-container px-space-xs hover:bg-primary-container hover:text-on-primary-container font-label-sm font-bold">&lt;BUY&gt;</button>
+</td>
+</tr>
+<!-- Ticker Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-lowest group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>INFY</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">INFOSYS LIMITED</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">1,780.20</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-error">-1.85%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-error" style="width: 22%;"></div>
+</div>
+<span class="text-error font-bold">22</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-error">-1.12%</td>
+<td class="py-space-xs px-space-sm text-on-surface-variant">0.88x</td>
+<td class="py-space-xs px-space-sm text-error font-bold">SUPPLY ZONE LIQUIDATION</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-error-container text-on-error-container px-space-xs font-bold text-label-sm font-label-sm">A+</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-error px-space-xs hover:bg-error-container hover:text-on-error-container font-label-sm font-bold">&lt;SELL&gt;</button>
+</td>
+</tr>
+<!-- Ticker Row 4 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-low/40 group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>SUNPHARMA</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">SUN PHARMA INDS</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">1,822.40</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-tertiary">+2.88%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-tertiary" style="width: 92%;"></div>
+</div>
+<span class="text-tertiary font-bold">92</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-tertiary">+2.05%</td>
+<td class="py-space-xs px-space-sm text-secondary">3.41x</td>
+<td class="py-space-xs px-space-sm text-tertiary-fixed font-bold">FRESH OB EXPANSION GATE</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-tertiary-container text-on-tertiary px-space-xs font-bold text-label-sm font-label-sm">A+</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-primary-container px-space-xs hover:bg-primary-container hover:text-on-primary-container font-label-sm font-bold">&lt;BUY&gt;</button>
+</td>
+</tr>
+<!-- Ticker Row 5 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-lowest group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>TCS</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">TATA CONSULTANCY SVC</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">4,115.00</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">+0.05%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-outline" style="width: 51%;"></div>
+</div>
+<span class="text-outline font-bold">51</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-outline">+0.01%</td>
+<td class="py-space-xs px-space-sm text-on-surface-variant">0.72x</td>
+<td class="py-space-xs px-space-sm text-outline font-bold">RANGE BOUND CONSOLIDATION</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-surface-container text-outline px-space-xs font-bold text-label-sm font-label-sm">B</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-on-surface-variant px-space-xs hover:bg-surface-container-highest font-label-sm font-bold">&lt;HOLD&gt;</button>
+</td>
+</tr>
+<!-- Ticker Row 6 -->
+<tr class="hover:bg-surface-container-high transition-colors bg-surface-container-low/40 group">
+<td class="py-space-xs px-space-sm font-bold text-primary-container flex items-center gap-space-xs">
+<span>AXISBANK</span>
+<span class="text-outline-variant text-[9px]">EQ</span>
+</td>
+<td class="py-space-xs px-space-sm text-on-surface">AXIS BANK LTD</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-on-surface">1,212.80</td>
+<td class="py-space-xs px-space-sm text-right font-bold text-tertiary">+1.75%</td>
+<td class="py-space-xs px-space-sm text-center">
+<div class="inline-flex items-center gap-space-xs">
+<div class="w-12 bg-surface-container-highest h-2 relative">
+<div class="h-full bg-tertiary" style="width: 82%;"></div>
+</div>
+<span class="text-tertiary font-bold">82</span>
+</div>
+</td>
+<td class="py-space-xs px-space-sm text-right text-tertiary">+0.95%</td>
+<td class="py-space-xs px-space-sm text-secondary">2.14x</td>
+<td class="py-space-xs px-space-sm text-tertiary font-bold">INSTITUTIONAL DELTA RAMP</td>
+<td class="py-space-xs px-space-sm text-center">
+<span class="bg-tertiary-container text-on-tertiary px-space-xs font-bold text-label-sm font-label-sm">A</span>
+</td>
+<td class="py-space-xs px-space-sm text-center">
+<button class="bg-surface-container-high text-primary-container px-space-xs hover:bg-primary-container hover:text-on-primary-container font-label-sm font-bold">&lt;BUY&gt;</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination & Status strip -->
+<div class="h-6 bg-surface-container-high px-space-sm flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant select-none">
+<div class="flex items-center gap-space-md">
+<span>PAGE: <span class="text-primary-container font-bold">1 / 43</span></span>
+<span class="text-outline-variant">|</span>
+<span>RECORDS: 2,613 SEC / 12,490 DERIVATIVES</span>
+<span class="text-outline-variant">|</span>
+<span class="text-tertiary">SQLITE IN-MEMORY SHARD: WARM</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-xs bg-surface-container hover:bg-surface-bright text-on-surface">&lt;PREV</button>
+<button class="px-space-xs bg-surface-container hover:bg-surface-bright text-on-surface">NEXT&gt;</button>
+</div>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- QUADRANT 4: LAYA AI QUANTITATIVE SYNTHESIS & LEVEL 2 LADDER -->
+<!-- ======================================================== -->
+<div class="col-span-12 xl:col-span-4 flex flex-col bg-surface-container-low shadow-md min-h-[380px]">
+<!-- Header -->
+<div class="h-6 bg-surface-container-high px-space-sm flex items-center justify-between text-label-sm font-label-sm">
+<div class="flex items-center gap-space-sm">
+<span class="text-primary-container font-bold uppercase">WINDOW 4: LAYA AI (GEMMA4:12B) &amp; L2 DEPTH</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-secondary font-bold">LIVE TELEMETRY</span>
+</div>
+</div>
+<!-- Content Split: AI Feed on Top, Micro Level 2 Ladder on Bottom -->
+<div class="flex-1 flex flex-col bg-surface-container-lowest p-space-xs gap-space-xs overflow-y-auto">
+<!-- Laya AI Quant Logs Box -->
+<div class="bg-surface-container p-space-xs flex flex-col gap-space-xs">
+<div class="flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-secondary font-bold">[LAYA MODEL: DIRECT QUANT MEMORY]</span>
+<span class="text-outline font-tabular-data">TOKENS: 4.8K/S</span>
+</div>
+<div class="bg-surface-container-low p-space-xs space-y-space-xs text-body-sm font-body-sm">
+<div class="text-tertiary">
+<span class="text-primary font-bold">[15:15:30 IST]</span> Bullish institutional absorption confirmed at 24,780.00 OB demand boundary. Call delta skew accelerating +14.2% into post-settlement.
+            </div>
+<div class="text-secondary">
+<span class="text-primary font-bold">[REGIME DETECTED]</span> ACCUMULATION SWARM (Factor: 8.42x) | GAMMA FLIP POINT: 24,800. Short squeeze probability: 78.4%.
+            </div>
+<div class="text-on-surface-variant">
+<span class="text-primary font-bold">[ACTION DISPATCH]</span> Execute LONG on HDFCBANK &amp; SUNPHARMA with strike trailing buffer at VWAP -0.4%.
+            </div>
+</div>
+</div>
+<!-- Micro Level II Order Depth Ladder -->
+<div class="flex-1 bg-surface-container p-space-xs flex flex-col">
+<div class="flex justify-between items-center bg-surface-container-high px-space-xs py-space-xs text-label-sm font-label-sm">
+<span class="text-tertiary font-bold">BIDS (L3 QUEUE)</span>
+<span class="text-secondary font-bold">SPREAD: 0.05 (0.00%)</span>
+<span class="text-error font-bold">ASKS (L3 QUEUE)</span>
+</div>
+<div class="grid grid-cols-2 gap-space-xs pt-space-xs font-tabular-data text-tabular-data flex-1">
+<!-- Left Side: Bids (Green) -->
+<div class="space-y-space-xs">
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 bg-tertiary/20" style="width: 95%;"></div>
+<span class="z-10 text-tertiary font-bold">24,834.80</span>
+<span class="z-10 text-on-surface">18,450 [12]</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 bg-tertiary/20" style="width: 82%;"></div>
+<span class="z-10 text-tertiary font-bold">24,834.75</span>
+<span class="z-10 text-on-surface">14,200 [08]</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 bg-tertiary/20" style="width: 64%;"></div>
+<span class="z-10 text-tertiary font-bold">24,834.70</span>
+<span class="z-10 text-on-surface">10,950 [06]</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 bg-tertiary/20" style="width: 50%;"></div>
+<span class="z-10 text-tertiary font-bold">24,834.65</span>
+<span class="z-10 text-on-surface">8,100 [04]</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute right-0 top-0 bottom-0 bg-tertiary/20" style="width: 38%;"></div>
+<span class="z-10 text-tertiary font-bold">24,834.60</span>
+<span class="z-10 text-on-surface">5,450 [03]</span>
+</div>
+</div>
+<!-- Right Side: Asks (Red) -->
+<div class="space-y-space-xs">
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 bg-error/20" style="width: 32%;"></div>
+<span class="z-10 text-on-surface">4,850 [04]</span>
+<span class="z-10 text-error font-bold">24,834.85</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 bg-error/20" style="width: 45%;"></div>
+<span class="z-10 text-on-surface">7,200 [07]</span>
+<span class="z-10 text-error font-bold">24,834.90</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 bg-error/20" style="width: 55%;"></div>
+<span class="z-10 text-on-surface">9,400 [05]</span>
+<span class="z-10 text-error font-bold">24,834.95</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 bg-error/20" style="width: 70%;"></div>
+<span class="z-10 text-on-surface">12,150 [09]</span>
+<span class="z-10 text-error font-bold">24,835.00</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low px-space-xs relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 bg-error/20" style="width: 88%;"></div>
+<span class="z-10 text-on-surface">16,800 [14]</span>
+<span class="z-10 text-error font-bold">24,835.05</span>
+</div>
+</div>
+</div>
+<!-- Total Cumulative Depth Balance -->
+<div class="mt-space-xs bg-surface-container-low p-space-xs flex justify-between items-center font-tabular-data text-tabular-data">
+<span class="text-tertiary font-bold">TOTAL BID: 57,150 LOTS (66.8%)</span>
+<span class="text-error font-bold">TOTAL ASK: 50,400 LOTS (33.2%)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- CONSOLE STATUS STRIP & HOTKEY RUNTIME -->
+<div class="w-full bg-surface-container-lowest px-space-xs py-space-xs flex items-center justify-between text-label-sm font-label-sm text-outline shadow-sm">
+<div class="flex items-center gap-space-md">
+<span class="text-primary-container font-bold">&gt;&gt; DESK CMD:</span>
+<span class="text-on-surface">READY FOR INPUT</span>
+<span class="text-outline-variant">|</span>
+<span>ACTIVE DESK: <span class="text-secondary font-bold">MUMBAI-EQ-QUANT-01</span></span>
+<span class="text-outline-variant">|</span>
+<span>SYNC TO EXCHANGE: <span class="text-tertiary font-bold">L3 0.2ms NSE DIRECT</span></span>
+</div>
+<div class="flex items-center gap-space-sm font-command-line text-command-line">
+<span class="text-primary-container font-bold">&lt;ALT+F1&gt; RE-TICK</span>
+<span class="text-outline-variant">|</span>
+<span class="text-primary-container font-bold">&lt;F9&gt; EXECUTE BASKET</span>
+<span class="text-outline-variant">|</span>
+<span class="text-primary-container font-bold">&lt;ESC&gt; HALT ALL ALGORITHMS</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Interactive hotkey simulation & ticker pulse
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const cmd = document.querySelector('input');
+        if (cmd) cmd.value = 'SYS HALT <GO>';
+      }
+    });
+  })();
+</script></main></div><footer class="fixed bottom-0 left-0 right-0 h-6 bg-surface-container-lowest border-t border-outline-variant/60 z-50 flex items-center px-space-sm overflow-hidden"><div class="flex items-center gap-space-lg font-tabular-data text-tabular-data whitespace-nowrap overflow-x-hidden"><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">NIFTY 50</span><span class="text-on-surface">24,834.80</span><span class="text-tertiary">+142.15 (+0.58%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">SENSEX</span><span class="text-on-surface">81,332.72</span><span class="text-tertiary">+418.30 (+0.52%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">SPX</span><span class="text-on-surface">5,648.40</span><span class="text-tertiary">+23.44 (+0.42%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">DXY</span><span class="text-on-surface">100.84</span><span class="text-error">-0.28 (-0.28%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">BRENT CRUDE</span><span class="text-on-surface">74.49</span><span class="text-error">-1.12 (-1.48%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">USDINR</span><span class="text-on-surface">83.68</span><span class="text-on-surface-variant">+0.01 (+0.01%)</span></div><div class="flex items-center gap-space-xs"><span class="text-primary-container font-bold">INDIA VIX</span><span class="text-on-surface">12.88</span><span class="text-error">-0.45 (-3.38%)</span></div></div></footer></body></html>

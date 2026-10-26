@@ -1,0 +1,20 @@
+# ==============================================================================
+# Zien Quant - Order Block Terminal
+# Runtime Requirements
+# ==============================================================================
+# Python 3.12+ Standard Library ONLY.
+#
+# No third-party packages or pip dependencies are required to run Zien Quant.
+# The server, real exchange scraper, quantitative flow engine, previous session
+# engine, authentication, and local Ollama AI client are 100% stdlib.
+#
+# Core Standard Library modules utilized:
+# - http.server (ThreadingHTTPServer)
+# - sqlite3 (Database storage with WAL mode & automated migrations)
+# - urllib.request, urllib.error, urllib.parse (Exchange data fetching & Ollama API)
+# - hashlib, hmac, secrets (PBKDF2 HMAC-SHA256, session tokens, CSRF protection)
+# - gzip, json, csv, io (Gzip compression, serialization & streaming export)
+# - threading, queue, concurrent.futures (Parallel processing & LLM worker)
+# - unittest (Built-in automated test suite)
+#
+# For development tooling (linters, type checkers), see requirements-dev.txt.
