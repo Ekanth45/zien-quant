@@ -67,6 +67,7 @@ from session_manager import (
     get_session_state,
     build_session_snapshot,
     get_session_scorecard,
+    enrich_daily_rankings,
 )
 
 BASE_DIR = Path(__file__).parent
@@ -381,7 +382,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self._send_json(payload)
 
     def _handle_market(self, query: Dict[str, List[str]]) -> None:
-        session_req = query.get("session", [""])[0].lower()
+        session_req = (query.get("session", [""])[0] or query.get("mode", [""])[0]).lower()
         try:
             tf = int(query.get("timeframe", ["5"])[0])
         except ValueError:
@@ -446,6 +447,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
                         stored_snap["data_mode"] = "PREVIOUS_SESSION"
                         stored_snap["session_state"] = "PREVIOUS"
                         stored_snap["scorecard"] = get_session_scorecard(stored_snap.get("session_date", session_date), db_manager=self.db)
+                        stored_snap = enrich_daily_rankings(stored_snap, stored_snap.get("session_date", session_date), archive=get_candle_archive())
                         self._send_json(stored_snap)
                         return
             except Exception as e:

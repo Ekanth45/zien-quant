@@ -53,6 +53,7 @@ wheels/
 Thumbs.db
 
 # Archives & Temporary
+tmp/
 *.zip
 *.tar.gz
 *.pdf

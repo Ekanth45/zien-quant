@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 420" width="940" height="420" style="background:#090d16; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="cardBg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e172a"/>
+      <stop offset="100%" stop-color="#0a0f1d"/>
+    </linearGradient>
+    <linearGradient id="scoreGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="49%" stop-color="#f87171"/>
+      <stop offset="50%" stop-color="#64748b"/>
+      <stop offset="70%" stop-color="#94a3b8"/>
+      <stop offset="71%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="940" height="420" fill="url(#cardBg2)"/>
+  <rect x="0" y="0" width="940" height="420" fill="none" stroke="#1e293b" stroke-width="2"/>
+
+  <!-- Header -->
+  <text x="36" y="44" fill="#f8fafc" font-size="20" font-weight="800">DAILY QUANT 0–100 SCORING &amp; TIERS SPECIFICATION</text>
+  <text x="36" y="66" fill="#94a3b8" font-size="12">Derived from the 33-Page Quantitative Research Specification • Verified Against NSE Equities</text>
+
+  <!-- Formula Weight Distribution Bars -->
+  <g transform="translate(36, 95)">
+    <text x="0" y="0" fill="#f1f5f9" font-size="13" font-weight="700">COMPONENT WEIGHT ALLOCATION (TOTAL 100 POINTS)</text>
+
+    <!-- 1. Trend & Supertrend -->
+    <g transform="translate(0, 16)">
+      <rect width="868" height="24" rx="4" fill="#1e293b"/>
+      <!-- Segments -->
+      <rect x="0" y="0" width="217" height="24" rx="4" fill="#38bdf8"/>
+      <rect x="217" y="0" width="217" height="24" fill="#a855f7"/>
+      <rect x="434" y="0" width="173.6" height="24" fill="#fbbf24"/>
+      <rect x="607.6" y="0" width="130.2" height="24" fill="#f472b6"/>
+      <rect x="737.8" y="0" width="130.2" height="24" rx="4" fill="#34d399"/>
+    </g>
+
+    <!-- Legend -->
+    <g transform="translate(0, 52)">
+      <!-- Item 1 -->
+      <circle cx="6" cy="6" r="5" fill="#38bdf8"/>
+      <text x="18" y="10" fill="#f1f5f9" font-size="11" font-weight="600">Trend &amp; Supertrend</text>
+      <text x="18" y="24" fill="#94a3b8" font-size="10">25 pts • ATR Multiplier 3.0</text>
+
+      <!-- Item 2 -->
+      <circle cx="180" cy="6" r="5" fill="#a855f7"/>
+      <text x="192" y="10" fill="#f1f5f9" font-size="11" font-weight="600">Pivots (CPR &amp; Camarilla)</text>
+      <text x="192" y="24" fill="#94a3b8" font-size="10">25 pts • TC/BC &amp; H1-H5/L1-L5</text>
+
+      <!-- Item 3 -->
+      <circle cx="360" cy="6" r="5" fill="#fbbf24"/>
+      <text x="372" y="10" fill="#f1f5f9" font-size="11" font-weight="600">Volume Surge (RVOL)</text>
+      <text x="372" y="24" fill="#94a3b8" font-size="10">20 pts • 20-period baseline</text>
+
+      <!-- Item 4 -->
+      <circle cx="530" cy="6" r="5" fill="#f472b6"/>
+      <text x="542" y="10" fill="#f1f5f9" font-size="11" font-weight="600">Wilder RSI(14)</text>
+      <text x="542" y="24" fill="#94a3b8" font-size="10">15 pts • Wilder EMA</text>
+
+      <!-- Item 5 -->
+      <circle cx="690" cy="6" r="5" fill="#34d399"/>
+      <text x="702" y="10" fill="#f1f5f9" font-size="11" font-weight="600">VWAP ±1σ Bands</text>
+      <text x="702" y="24" fill="#94a3b8" font-size="10">15 pts • Volume variance</text>
+    </g>
+  </g>
+
+  <!-- Score Tiers Scale -->
+  <g transform="translate(36, 210)">
+    <text x="0" y="0" fill="#f1f5f9" font-size="13" font-weight="700">CLASSIFICATION TIERS &amp; THRESHOLD CUTOFFS</text>
+
+    <!-- Gauge Bar -->
+    <g transform="translate(0, 15)">
+      <rect width="868" height="30" rx="6" fill="url(#scoreGaugeGrad)"/>
+      <!-- Ticks -->
+      <line x1="0" y1="0" x2="0" y2="35" stroke="#ffffff" stroke-width="2"/>
+      <text x="4" y="48" fill="#cbd5e1" font-size="11" font-weight="700">0</text>
+
+      <line x1="434" y1="0" x2="434" y2="35" stroke="#ffffff" stroke-width="2"/>
+      <text x="424" y="48" fill="#ffffff" font-size="11" font-weight="800">50</text>
+
+      <line x1="607.6" y1="0" x2="607.6" y2="35" stroke="#ffffff" stroke-width="2"/>
+      <text x="598" y="48" fill="#ffffff" font-size="11" font-weight="800">70</text>
+
+      <line x1="868" y1="0" x2="868" y2="35" stroke="#ffffff" stroke-width="2"/>
+      <text x="846" y="48" fill="#cbd5e1" font-size="11" font-weight="700">100</text>
+    </g>
+
+    <!-- Tier Labels -->
+    <g transform="translate(0, 75)">
+      <!-- Bearish Box -->
+      <rect x="0" y="0" width="410" height="70" rx="6" fill="#7f1d1d" fill-opacity="0.2" stroke="#ef4444" stroke-width="1"/>
+      <text x="16" y="22" fill="#ef4444" font-size="13" font-weight="800">BEARISH TIER (SELL)</text>
+      <text x="16" y="40" fill="#fca5a5" font-size="11">Score &lt; 50.0 • Negative Trajectory</text>
+      <text x="16" y="56" fill="#94a3b8" font-size="10">Sub-50 scores select candidate for Worst Stock of the Day</text>
+
+      <!-- Normal Box -->
+      <rect x="425" y="0" width="160" height="70" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="1"/>
+      <text x="16" y="22" fill="#cbd5e1" font-size="12" font-weight="800">NORMAL (HOLD)</text>
+      <text x="16" y="40" fill="#94a3b8" font-size="11">50.0 ≤ Score ≤ 70.0</text>
+      <text x="16" y="56" fill="#64748b" font-size="10">Neutral consolidation</text>
+
+      <!-- Bullish Box -->
+      <rect x="600" y="0" width="268" height="70" rx="6" fill="#064e3b" fill-opacity="0.2" stroke="#10b981" stroke-width="1"/>
+      <text x="16" y="22" fill="#10b981" font-size="13" font-weight="800">BULLISH TIER (BUY)</text>
+      <text x="16" y="40" fill="#a7f3d0" font-size="11">Score &gt; 70.0 • Positive Trajectory</text>
+      <text x="16" y="56" fill="#94a3b8" font-size="10">70+ scores select Best Stock of the Day</text>
+    </g>
+  </g>
+
+  <!-- Footer note -->
+  <text x="36" y="395" fill="#64748b" font-size="11">Automated Selection: Best Stock = argmax(Score ≥ 70) • Worst Stock = argmin(Score ≤ 50) • Validated by Laya AI ModernBERT</text>
+</svg>

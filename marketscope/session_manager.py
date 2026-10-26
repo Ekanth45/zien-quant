@@ -31,10 +31,15 @@ try:
         calculate_support_resistance,
         calculate_order_blocks,
         calculate_composite_score,
+        calculate_cpr,
+        calculate_camarilla,
+        calculate_supertrend,
+        calculate_vwap_bands,
     )
     from decision_engine import evaluate_ai_decision
     from candle_archive import CandleArchive, get_candle_archive
-    from scraper import RealTimeScraperFeed, get_live_scraper_feed
+    from scraper import RealTimeScraperFeed, get_live_scraper_feed, calculate_daily_quant_from_archive
+    from daily_quant import rank_daily_stocks
     from security import DatabaseManager
 except ImportError:
     from marketscope.market_schedule import (
@@ -55,10 +60,15 @@ except ImportError:
         calculate_support_resistance,
         calculate_order_blocks,
         calculate_composite_score,
+        calculate_cpr,
+        calculate_camarilla,
+        calculate_supertrend,
+        calculate_vwap_bands,
     )
     from marketscope.decision_engine import evaluate_ai_decision
     from marketscope.candle_archive import CandleArchive, get_candle_archive
-    from marketscope.scraper import RealTimeScraperFeed, get_live_scraper_feed
+    from marketscope.scraper import RealTimeScraperFeed, get_live_scraper_feed, calculate_daily_quant_from_archive
+    from marketscope.daily_quant import rank_daily_stocks
     from marketscope.security import DatabaseManager
 
 from pathlib import Path
@@ -66,6 +76,41 @@ import os
 DEFAULT_DB_PATH = os.environ.get("MS_DB_PATH", str(Path(__file__).parent.parent / "work" / "runtime" / "marketscope.db"))
 
 logger = logging.getLogger("marketscope.session_manager")
+
+
+def enrich_daily_rankings(
+    snapshot: Dict[str, Any], session_date: str, timeframe: int = 5,
+    archive: Optional[CandleArchive] = None,
+) -> Dict[str, Any]:
+    """Return a calculated view without rewriting a completed stored snapshot.
+
+    Scores always use full five-minute archive history, independently of the
+    selected chart interval. A final twenty-bar preview cannot establish a full
+    session or satisfy the technical warm-up requirement.
+    """
+    archive = archive or get_candle_archive()
+    enriched = dict(snapshot)
+    stocks = {}
+    for symbol, original in snapshot.get("stocks", {}).items():
+        stock = dict(original)
+        stock["daily_quant"] = calculate_daily_quant_from_archive(symbol, session_date, archive=archive)
+        stocks[symbol] = stock
+    enriched["stocks"] = stocks
+    daily_ranking = rank_daily_stocks(
+        stocks, session_date, session_state=snapshot.get("session_state", "PREVIOUS"),
+    )
+    enriched["daily_ranking"] = daily_ranking
+    enriched["best_stock"] = daily_ranking.get("best")
+    enriched["worst_stock"] = daily_ranking.get("worst")
+    if "spotlight" in enriched and isinstance(enriched["spotlight"], dict):
+        enriched["spotlight"]["best_stock"] = daily_ranking.get("best")
+        enriched["spotlight"]["worst_stock"] = daily_ranking.get("worst")
+    enriched["tiers_summary"] = daily_ranking.get("tiers_summary", {
+        "bullish_count": sum(1 for s in stocks.values() if (s.get("score") or 0) > 70),
+        "bearish_count": sum(1 for s in stocks.values() if s.get("score") is not None and s.get("score") < 50),
+        "normal_count": sum(1 for s in stocks.values() if s.get("score") is not None and 50 <= s.get("score") <= 70),
+    })
+    return enriched
 
 
 def get_session_state(
@@ -208,7 +253,7 @@ def build_session_snapshot(
             if row and hasattr(row, "__getitem__") and not type(row).__name__.startswith(("MagicMock", "Mock")):
                 if row["complete"] == 1 and isinstance(row["payload_json"], str):
                     stored = json.loads(row["payload_json"])
-                    return stored
+                    return enrich_daily_rankings(stored, session_date, timeframe, archive)
     except Exception as err:
         logger.warning("Error reading session_snapshots table: %s", err)
 
@@ -342,6 +387,12 @@ def build_session_snapshot(
         if "raw" in score_dict:
             score_dict["raw"]["atr"] = atr_val
 
+        # Quant indicators from PDF formula reference
+        cpr = calculate_cpr(day_high, day_low, prev_close if prev_close else close_price)
+        camarilla = calculate_camarilla(day_high, day_low, prev_close if prev_close else close_price)
+        supertrend = calculate_supertrend(candles, period=10, multiplier=3.0)
+        vwap_bands = calculate_vwap_bands(candles)
+
         ai_decision = evaluate_ai_decision(
             symbol=sym,
             price=close_price,
@@ -354,6 +405,9 @@ def build_session_snapshot(
             config=cfg,
             closed_confirming=True,
             atr=atr_val,
+            supertrend=supertrend,
+            cpr=cpr,
+            camarilla=camarilla,
         )
 
         stock_item = {
@@ -374,6 +428,12 @@ def build_session_snapshot(
             "volume": total_vol,
             "rvol": rvol,
             "vwap": vwap,
+            "vwap_bands": vwap_bands,
+            "cpr": cpr,
+            "camarilla": camarilla,
+            "supertrend": supertrend,
+            "rank_tier": score_dict.get("rank_tier", "NORMAL"),
+            "tier": score_dict.get("rank_tier", "NORMAL"),
             "support": sup,
             "resistance": res_val,
             "order_blocks": order_blocks,
@@ -383,6 +443,9 @@ def build_session_snapshot(
             "candles_preview": candles[-20:],
             "updated_at": datetime.fromtimestamp(candles[-1]["t"], timezone.utc).isoformat(),
         }
+        stock_item["daily_quant"] = calculate_daily_quant_from_archive(
+            sym, session_date, candles=candles if timeframe == 5 else None, archive=archive,
+        )
         stocks_payload[sym] = stock_item
 
         pts = [round(((c - open_price) / open_price) * 100, 2) for c in closes]
@@ -519,6 +582,17 @@ def build_session_snapshot(
         "sectors": sectors,
         "stocks": stocks_payload,
     }
+    daily_ranking = rank_daily_stocks(stocks_payload, session_date, session_state="PREVIOUS")
+    snapshot["daily_ranking"] = daily_ranking
+    snapshot["best_stock"] = daily_ranking.get("best")
+    snapshot["worst_stock"] = daily_ranking.get("worst")
+    snapshot["spotlight"]["best_stock"] = daily_ranking.get("best")
+    snapshot["spotlight"]["worst_stock"] = daily_ranking.get("worst")
+    snapshot["tiers_summary"] = daily_ranking.get("tiers_summary", {
+        "bullish_count": sum(1 for s in stocks_payload.values() if (s.get("score") or 0) > 70),
+        "bearish_count": sum(1 for s in stocks_payload.values() if s.get("score") is not None and s.get("score") < 50),
+        "normal_count": sum(1 for s in stocks_payload.values() if s.get("score") is not None and 50 <= s.get("score") <= 70),
+    })
 
     # 5. Store in session_snapshots ONLY if complete=1 (immutable)
     if is_complete and db:

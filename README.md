@@ -5,14 +5,31 @@
 ![Architecture](https://img.shields.io/badge/architecture-stdlib%20only-success.svg)
 ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)
 
-**Zien Quant** is a deterministic quantitative trading terminal and order block analysis workstation for Indian cash equities (National Stock Exchange - NSE). Built from the ground up on a **100% Python Standard Library backend** with zero third-party pip dependencies, it delivers deterministic technical order block detection, canvas-rendered intraday flow rivers, automated risk-to-reward gating, and optional local AI trade reasoning powered by Ollama. Data is sourced from Yahoo Finance chart candles; the terminal is a single-owner administrative system and does not rely on direct exchange feeds, Level 2/3 order flow, or institutional participant tracking.
+<p align="center">
+  <img src="docs/screenshots/zien_quant_hero_banner.svg" alt="Zien Quant Hero Banner" width="100%" />
+</p>
+
+**Zien Quant** is a deterministic quantitative trading terminal and order block analysis workstation for Indian cash equities (National Stock Exchange - NSE). Built from the ground up on a **100% Python Standard Library backend** with zero third-party pip dependencies, it delivers deterministic technical order block detection, canvas-rendered intraday flow rivers, automated risk-to-reward gating, and local AI trade reasoning powered by Ollama and Laya AI ModernBERT System 1. Data is sourced from Yahoo Finance chart candles; the terminal is a single-owner administrative system and does not rely on direct exchange feeds, Level 2/3 order flow, or institutional participant tracking.
 
 **Version 2.1.0** introduces verified previous close resolution, 1-minute candle matrix streaming with 5-second polling, canvas-rendered trajectory matrix fields, and explicit design preview labeling. The homepage provides the responsive workspace with market overview, stock scanner, watchlist, stock inspection, owner console, and Laya assistant. The Flow River remains available at `/flow`. See the [frontend version notes](docs/FRONTEND_V2.md).
+
+The daily formula panel compares the strongest and weakest observed stocks using closed five-minute OHLCV indicators from the supplied research PDF: Central Pivot Range (CPR), Camarilla ($H_1..H_5, L_1..L_5$), Supertrend (10, 3.0), Session VWAP & $\pm 1\sigma$ bands, Wilder RSI(14), Relative Volume (RVOL), and Bollinger Bandwidth. Stocks are scored out of 100 with strict classification tiers: **Bullish** ($>70$), **Normal** ($50–70$), and **Bearish** ($<50$), with **Best Stock of the Day** and **Worst Stock of the Day** deterministic selection confirmed by Laya AI ModernBERT System 1 (`/v1/systemone`). See the [PDF analysis and local model setup](docs/PDF_FORMULA_ANALYSIS.md).
 
 ---
 
 ## Visual Tour
 
+### Quantitative Decision Architecture & Pipeline
+<p align="center">
+  <img src="docs/screenshots/quant_pipeline_architecture.svg" alt="Quant Pipeline Architecture" width="100%" />
+</p>
+
+### 0–100 Scoring Formula & Classification Tiers
+<p align="center">
+  <img src="docs/screenshots/quant_formula_breakdown.svg" alt="Quant Formula & Tiers Breakdown" width="100%" />
+</p>
+
+### Intraday Workstation & Flow River
 | Intraday Flow River Terminal | Pinned Setup & Candlestick Profile |
 |:---:|:---:|
 | ![Desktop Terminal](docs/screenshots/desktop_terminal.png) | ![Flow River Details](docs/screenshots/flow_river_details.png) |
@@ -25,12 +42,17 @@
 
 ## Core Capabilities
 
+- **0–100 Composite Quant Scoring Engine**: Rigorous, multi-factor indicator normalization incorporating Supertrend (25%), CPR & Camarilla pivots (25%), Relative Volume RVOL (20%), Wilder Smoothed RSI (15%), and Session VWAP $\pm 1\sigma$ bands (15%).
+- **Strict Classification Tiers**:
+  - **BULLISH (BUY)**: Composite Score $> 70.0$ / 100
+  - **NORMAL (NEUTRAL)**: Composite Score $50.0 – 70.0$ / 100
+  - **BEARISH (SELL)**: Composite Score $< 50.0$ / 100
+- **Automated Best & Worst Stock of the Day**: Deterministic identification of the single strongest accumulation candidate ($\max(\text{score} \ge 70)$) and weakest distribution candidate ($\min(\text{score} \le 50)$).
+- **Dual-Model Laya AI Decision System**: Fast ModernBERT System 1 classifier (`/v1/systemone`) provides sub-second confirmation and sentiment sanity checks, backed by Ollama `laya-quant:latest` / `gemma4:12b` for deep quantitative trade reasoning.
 - **Intraday Flow River**: High-framerate HTML5 Canvas stream visualizing price and volume momentum across 75+ intraday candle bars for the liquid NSE universe.
-- **4-Stage Funnel Categorization**: Algorithmic classification into **Movers** ($|\Delta\%| \ge 1.0\%$), **Volume** ($RVOL \ge 1.2$), **Pressure** (score $\ge 60$ / $\le 40$), and **Setups** ($R:R \ge 1.5$).
 - **Setup Cards with Strict R:R Gating**: Intraday trade opportunities with mathematical validation. Setups require a mandatory **Risk:Reward ratio $\ge 1.5$** anchored to verified swing pivots; invalid or low-expectancy structures are automatically discarded.
 - **Zero Synthetic Data Guarantee**: No fake candles, synthetic price randomizers, or invented levels. Missing or off-market data is honestly reflected via dedicated session states.
 - **Previous Session Playback Engine**: Automatically computes and replays real persisted Yahoo Finance candle data from the most recent completed market session when the exchange is closed or upstream feeds are down, with built-in holiday awareness.
-- **Laya AI Commentary**: Optional local intelligence integration with Ollama (`gemma4:12b`). Features strict regex numerical bounds validation against price discrepancies and a deterministic rules engine fallback.
 - **Resilient Upstream Scraper**: Multi-tiered fetcher with exponential backoff, randomized jitter, and an automatic circuit breaker tripping after consecutive upstream errors.
 - **Hardened Single-Owner Security**: Multi-factor authentication (TOTP), PBKDF2 HMAC-SHA256 password hashing, anti-CSRF token verification, session tracking, and sliding-window rate limiters.
 
@@ -161,34 +183,36 @@ Actionable trade setups are rendered as cards in the lower console:
 
 ## Architecture Overview
 
-```
-                                  +-----------------------+
-                                  | Yahoo Finance Feed    |
-                                  +-----------+-----------+
-                                              |
-                                              v
-+-----------------------+         +-----------------------+
-|  Local Ollama LLM     | <-----> |   Scraper & Archive   | (Circuit Breaker,
-|  (gemma4:12b)         |         |   (WAL SQLite Cache)  |  Exponential Backoff)
-+-----------------------+         +-----------+-----------+
-                                              |
-                                              v
-+-----------------------+         +-----------------------+
-|  Deterministic        | <-----> |   Session Manager &   | (Multi-tier Snapshot,
-|  Quantitative Engine  |         |   Schedule Matrix     |  Off-Market Playback)
-+-----------------------+         +-----------+-----------+
-                                              |
-                                              v
-                                  +-----------------------+
-                                  |  HTTP Server (Stdlib) | (PBKDF2 Auth, CSRF,
-                                  |  REST APIs & Gzip     |  Rate Limiting)
-                                  +-----------+-----------+
-                                              |
-                                              v
-                                  +-----------------------+
-                                  | Flow Terminal (WebUI) | (Pure HTML5 Canvas,
-                                  | Vanilla JS + CSS3     |  Zero NPM/CDN deps)
-                                  +-----------------------+
+```mermaid
+flowchart TD
+    subgraph DataLayer ["Data & Storage Layer"]
+        YF["Yahoo Finance 5m/1m Feeds"] --> SCR["Scraper Engine (Jitter, Circuit Breaker)"]
+        SCR --> ARCH[("SQLite candles.db (WAL)")]
+        CAT[("SQLite stock_master.db (2613 Symbols)")]
+    end
+
+    subgraph QuantEngine ["Quant Math & Scoring Engine"]
+        ARCH --> IND["Math Indicators (CPR, Camarilla H1-H5/L1-L5, Supertrend, VWAP ±1σ, RSI, RVOL)"]
+        IND --> SCORE["0-100 Composite Scoring Formula"]
+        SCORE --> TIERS{"Strict Tiers Classification"}
+        TIERS -->|"Score > 70"| BULL["BULLISH (BUY)"]
+        TIERS -->|"50 ≤ Score ≤ 70"| NORM["NORMAL (NEUTRAL)"]
+        TIERS -->|"Score < 50"| BEAR["BEARISH (SELL)"]
+        BULL --> BEST["Best Stock of the Day"]
+        BEAR --> WORST["Worst Stock of the Day"]
+    end
+
+    subgraph AIIntelligence ["Laya AI Decision Engine"]
+        BEST & WORST --> SYS1["ModernBERT System 1 (/v1/systemone)"]
+        SYS1 -->|"Fast Confirmation"| CONF["Trade Sanity Check"]
+        CONF --> OLLAMA["Ollama laya-quant:latest (Reasoning & Copilot)"]
+    end
+
+    subgraph Presentation ["Presentation Layer"]
+        CONF & OLLAMA --> SRV["ThreadingHTTPServer (Stdlib)"]
+        SRV --> UI1["Workspace & Daily Ranking Panel (/)"]
+        SRV --> UI2["HTML5 Canvas Flow River (/flow)"]
+    end
 ```
 
 - **Runtime Zero-Pip**: Zero external pip modules. All HTTP routing, thread pooling, cryptographic authentication, and JSON/Gzip serialization run on standard library modules.

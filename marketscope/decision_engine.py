@@ -27,6 +27,10 @@ def evaluate_ai_decision(
     config: Optional[Dict[str, Any]] = None,
     closed_confirming: bool = True,
     atr: Optional[float] = None,
+    supertrend: Optional[Dict[str, Any]] = None,
+    cpr: Optional[Dict[str, Any]] = None,
+    camarilla: Optional[Dict[str, Any]] = None,
+    laya_decision: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Computes actionable trade decision metrics based on multi-factor alignment.
@@ -353,7 +357,47 @@ def evaluate_ai_decision(
             if is_breakout and rvol < 1.0:
                 factors.append(f"Conviction capped at 60 (Breakout RVOL {rvol:.2f} < 1.0)")
 
-        # 2.3 Grading
+        # 2.3 Quant indicators from PDF reference (Supertrend, CPR, Camarilla)
+        if supertrend and isinstance(supertrend, dict):
+            st_dir = supertrend.get("direction")
+            st_val = supertrend.get("value")
+            if st_dir == 1:
+                factors.append(f"Supertrend (10, 3.0) bullish trailing support at ₹{st_val}")
+                if signal_type == "BUY":
+                    conviction = min(96, conviction + 3)
+            elif st_dir == -1:
+                factors.append(f"Supertrend (10, 3.0) bearish trailing resistance at ₹{st_val}")
+                if signal_type == "SELL":
+                    conviction = min(96, conviction + 3)
+
+        if cpr and isinstance(cpr, dict):
+            if cpr.get("is_narrow"):
+                factors.append(f"Narrow CPR ({cpr.get('width_pct'):.2f}%) indicates high trending breakout probability")
+            if cpr.get("tc") and price > cpr["tc"]:
+                factors.append(f"Price trading above CPR Top Central (₹{cpr['tc']})")
+            elif cpr.get("bc") and price < cpr["bc"]:
+                factors.append(f"Price trading below CPR Bottom Central (₹{cpr['bc']})")
+
+        if camarilla and isinstance(camarilla, dict):
+            if camarilla.get("h4") and price >= camarilla["h4"]:
+                factors.append(f"Camarilla H4 breakout level (₹{camarilla['h4']}) active")
+            elif camarilla.get("l4") and price <= camarilla["l4"]:
+                factors.append(f"Camarilla L4 breakdown level (₹{camarilla['l4']}) active")
+
+        # 2.4 Laya AI System 1 Decision Integration
+        if laya_decision and isinstance(laya_decision, dict):
+            laya_choice = str(laya_decision.get("choice", "")).lower()
+            laya_conf = float(laya_decision.get("confidence", 0.0))
+            if (signal_type == "BUY" and laya_choice == "bullish") or (signal_type == "SELL" and laya_choice == "bearish"):
+                factors.append(f"Laya AI decision confirmed: {laya_choice.title()} ({laya_conf*100:.0f}% confidence)")
+                conviction = min(98, round(conviction * 1.05 + laya_conf * 5))
+            elif laya_choice == "neutral":
+                factors.append("Laya AI decision: Neutral / Range-bound consolidation")
+            elif (signal_type == "BUY" and laya_choice == "bearish") or (signal_type == "SELL" and laya_choice == "bullish"):
+                factors.append(f"Laya AI divergence: AI indicates {laya_choice.title()}")
+                conviction = max(35, conviction - 15)
+
+        # 2.5 Grading
         is_closed = closed_confirming if closed_confirming is not None else metrics.get("is_closed", True)
         if rr >= grade_aplus_rr and rvol >= grade_aplus_rvol and abs(momentum) > grade_aplus_mom and is_closed:
             grade = "A+"
@@ -363,6 +407,16 @@ def evaluate_ai_decision(
             grade = "B"
         else:
             grade = "C"
+
+        # Laya confirmation elevates Grade A to Grade A+
+        if laya_decision and isinstance(laya_decision, dict):
+            laya_choice = str(laya_decision.get("choice", "")).lower()
+            laya_conf = float(laya_decision.get("confidence", 0.0))
+            if grade == "A" and laya_conf >= 0.60 and (
+                (signal_type == "BUY" and laya_choice == "bullish") or
+                (signal_type == "SELL" and laya_choice == "bearish")
+            ):
+                grade = "A+"
 
         reward_amt = round(abs(t1 - price), 2) if t1 is not None else 0.0
 
@@ -381,6 +435,7 @@ def evaluate_ai_decision(
             "reward_amount": reward_amt,
             "rationale": rationale,
             "factors": factors,
+            "laya_decision": laya_decision,
         }
 
     return {

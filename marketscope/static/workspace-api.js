@@ -259,6 +259,7 @@ export function createWorkspaceAPI(getState = () => ({}), { fetchImpl = globalTh
       error.status = response.status;
       error.code = data.error;
       error.retry_after = data.retry_after ?? null;
+      error.requires_mfa = data.requires_mfa === true;
       throw error;
     }
     switch (url.pathname) {

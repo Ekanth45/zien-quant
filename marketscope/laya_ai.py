@@ -8,6 +8,7 @@ Powers:
 
 from __future__ import annotations
 import json
+import hashlib
 import logging
 import os
 import queue
@@ -18,6 +19,52 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    from quant_knowledge import formula_system_prompt, ranking_context
+except ImportError:
+    from marketscope.quant_knowledge import formula_system_prompt, ranking_context
+
+
+def _context_key(data: Dict[str, Any]) -> str:
+    """Keep commentary tied to its exact session and observed calculations."""
+    return hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()[:20]
+
+
+def _analysis_key(symbol: str, timeframe: int, stock: Dict[str, Any]) -> str:
+    identity = {key: stock.get(key) for key in (
+        "session_date", "session_state", "price", "metrics", "ai_decision", "daily_quant"
+    )}
+    return f"{symbol.upper()}_{timeframe}_{_context_key(identity)}"
+
+
+def _pulse_key(snapshot: Dict[str, Any]) -> str:
+    return _context_key({
+        "session_date": snapshot.get("session_date"),
+        "session_state": snapshot.get("session_state"),
+        "daily_ranking": snapshot.get("daily_ranking"),
+        "stocks": {symbol: {k: stock.get(k) for k in ("price", "change_pct", "metrics", "status")}
+                   for symbol, stock in snapshot.get("stocks", {}).items()},
+    })
+
+
+def daily_ranking_reply(ranking: Optional[Dict[str, Any]]) -> str:
+    """Rank identities and arithmetic always come from the deterministic engine."""
+    if not ranking:
+        return "Daily formula ranking is unavailable for this received snapshot."
+    date = ranking.get("session_date") or "the selected session"
+    best, worst = ranking.get("best"), ranking.get("worst")
+    if not best or not worst:
+        return (f"Daily formula ranking for {date}: no distinct best/worst pair. "
+                f"{ranking.get('reason') or 'At least two eligible observations are required.'} "
+                f"Eligible: {ranking.get('eligible_count', 0)}; excluded: {ranking.get('excluded_count', 0)}.")
+    return (f"For {date}, the strongest observed stock is {best['symbol']} "
+            f"(directional score {best['score']}/100, candle close {best.get('as_of')}); "
+            f"the weakest is {worst['symbol']} "
+            f"(directional score {worst['score']}/100, candle close {worst.get('as_of')}). "
+            f"Compared {ranking.get('eligible_count', 0)} eligible monitored equities using closed 5-minute candles in the 09:15-15:15 IST window. "
+            "Weights: EMA 20, Supertrend 20, VWAP 20, RSI 15, MACD 15, OBV 10. "
+            "This is a descriptive ranking, not a win probability or a forecast of the closing winners.")
 
 logger = logging.getLogger("marketscope.laya_ai")
 
@@ -187,6 +234,70 @@ def validate_llm_output(text: str, stock_data: Dict[str, Any]) -> Tuple[bool, Op
     return True, None
 
 
+def query_laya_decision(
+    symbol: str,
+    stock_data: Dict[str, Any],
+    ollama_host: Optional[str] = None,
+    timeout: float = 2.0,
+) -> Optional[Dict[str, Any]]:
+    """
+    Executes fast classification via Ollama's System 1 decision endpoint (/v1/systemone)
+    using the 'laya' decision model. Returns calibrated choice, probabilities, and confidence score.
+    """
+    host = (ollama_host or os.environ.get("OLLAMA_HOST") or OLLAMA_DEFAULT_HOST).rstrip("/")
+    price = stock_data.get("price", 0.0) or 0.0
+    vwap = stock_data.get("vwap", price) or price
+    metrics = stock_data.get("metrics", {})
+    raw = metrics.get("raw", {})
+    rsi = raw.get("rsi", 50.0) if raw.get("rsi") is not None else 50.0
+    rvol = stock_data.get("rvol", 1.0) or 1.0
+    change_pct = stock_data.get("change_pct", 0.0) or 0.0
+    score = stock_data.get("score") if stock_data.get("score") is not None else metrics.get("score")
+    score_str = f"{score:.1f}" if isinstance(score, (int, float)) else "N/A"
+
+    state_text = (
+        f"Stock {symbol} trading at ₹{price:.2f} ({change_pct:+.2f}%). "
+        f"Directional score is {score_str}/100. "
+        f"Session VWAP is ₹{vwap:.2f}, RSI(14) is {rsi:.1f}, RVOL is {rvol:.2f}x."
+    )
+
+    payload = {
+        "model": DECISION_MODEL,
+        "state": state_text,
+        "questions": {
+            "trade_bias": {
+                "type": "choice",
+                "instructions": "Determine technical trade bias for Indian equities.",
+                "criteria": {
+                    "bullish": "Price above VWAP with healthy RSI and volume expansion",
+                    "bearish": "Price below VWAP with deteriorating momentum or breakdown",
+                    "neutral": "Range bound consolidation or mixed indicators without clear momentum",
+                },
+            },
+        },
+    }
+    url = f"{host}/v1/systemone"
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "MarketScope-LayaAI/SystemOne"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            answers = data.get("answers", {}).get("trade_bias", {})
+            if answers:
+                return {
+                    "model": DECISION_MODEL,
+                    "choice": answers.get("choice"),
+                    "confidence": round(float(answers.get("confidence", 0.0)), 3),
+                    "probabilities": {k: round(float(v), 3) for k, v in answers.get("probabilities", {}).items()},
+                }
+    except Exception as e:
+        logger.debug("Laya decision call skipped/failed: %s", e)
+    return None
+
+
 class LayaAIEngine:
     """
     Unified intelligence coordinator providing both deterministic 0ms algorithmic
@@ -290,7 +401,7 @@ class LayaAIEngine:
                 latency = round((time.time() - t0) * 1000, 1)
                 decision_model_available = any(m == "laya" or m.startswith("laya:") for m in models)
                 generative_model_available = any(self.model in m or m.startswith(self.model.split(":")[0]) for m in models)
-                is_ready = generative_model_available or decision_model_available
+                is_ready = generative_model_available
                 return {
                     "online": True,
                     "host": self.ollama_host,
@@ -304,6 +415,9 @@ class LayaAIEngine:
                     "last_latency_ms": self._last_latency_ms,
                     "last_error": self._last_error,
                     "queue_depth": self._queue.qsize(),
+                    "knowledge_mode": "document_grounding",
+                    "weights_trained": False,
+                    "daily_ranking_engine": "pdf-quant-1",
                 }
         except Exception as e:
             return {
@@ -326,7 +440,7 @@ class LayaAIEngine:
         num_predict: int = 240,
         temperature: float = 0.2,
         timeout: Optional[float] = None,
-        num_ctx: int = 2048,
+        num_ctx: int = 4096,
     ) -> Optional[str]:
         """
         Executes prompt on local Ollama server sending think: false, keep_alive: 30m,
@@ -340,6 +454,7 @@ class LayaAIEngine:
         url = f"{self.ollama_host}/api/generate"
         body = {
             "model": model_name,
+            "system": formula_system_prompt(),
             "prompt": prompt,
             "stream": False,
             "think": False,
@@ -347,7 +462,7 @@ class LayaAIEngine:
             "options": {
                 "num_predict": num_predict,
                 "temperature": temperature,
-                "num_ctx": num_ctx,
+                "num_ctx": max(4096, num_ctx),
             },
         }
         eff_timeout = timeout or self.timeout_sec
@@ -395,58 +510,16 @@ class LayaAIEngine:
         timeout: float = 3.0,
     ) -> Optional[Dict[str, Any]]:
         """
-        Executes ultra-fast (sub-second) classification via Ollama's System 1
+        Executes ultra-fast classification via Ollama's System 1
         decision endpoint (/v1/systemone) using the 'laya' decision model.
         Returns calibrated choice, probabilities, and confidence score.
         """
-        price = stock_data.get("price", 0.0)
-        vwap = stock_data.get("vwap", price)
-        metrics = stock_data.get("metrics", {})
-        raw = metrics.get("raw", {})
-        rsi = raw.get("rsi", 50.0)
-        rvol = stock_data.get("rvol", 1.0)
-        change_pct = stock_data.get("change_pct", 0.0)
-
-        state_text = (
-            f"Stock {symbol} trading at ₹{price:.2f} ({change_pct:+.2f}%). "
-            f"Session VWAP is ₹{vwap:.2f}, RSI(14) is {rsi:.1f}, RVOL is {rvol:.2f}x."
+        return query_laya_decision(
+            symbol=symbol,
+            stock_data=stock_data,
+            ollama_host=self.ollama_host,
+            timeout=timeout,
         )
-
-        payload = {
-            "model": DECISION_MODEL,
-            "state": state_text,
-            "questions": {
-                "trade_bias": {
-                    "type": "choice",
-                    "instructions": "Determine technical trade bias for Indian equities.",
-                    "criteria": {
-                        "bullish": "Price above VWAP with healthy RSI and volume expansion",
-                        "bearish": "Price below VWAP with deteriorating momentum or breakdown",
-                        "neutral": "Range bound consolidation or mixed indicators without clear momentum"
-                    }
-                }
-            }
-        }
-        url = f"{self.ollama_host}/v1/systemone"
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json", "User-Agent": "MarketScope-LayaAI/SystemOne"},
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                answers = data.get("answers", {}).get("trade_bias", {})
-                if answers:
-                    return {
-                        "model": DECISION_MODEL,
-                        "choice": answers.get("choice"),
-                        "confidence": round(float(answers.get("confidence", 0.0)), 3),
-                        "probabilities": {k: round(float(v), 3) for k, v in answers.get("probabilities", {}).items()},
-                    }
-        except Exception as e:
-            logger.debug("Laya decision call skipped/failed: %s", e)
-        return None
 
     def _worker_loop(self) -> None:
         """Background daemon worker consuming LLM generation tasks."""
@@ -468,7 +541,7 @@ class LayaAIEngine:
         symbol = job["symbol"]
         stock_data = job["stock_data"]
         timeframe = job["timeframe"]
-        cache_key = f"{symbol.upper()}_{timeframe}"
+        cache_key = _analysis_key(symbol, timeframe, stock_data)
 
         # Fast System 1 decision model check via laya if available
         decision_data = self._call_laya_decision(symbol, stock_data)
@@ -523,7 +596,7 @@ class LayaAIEngine:
         base_pulse["ai_pending"] = False
 
         with self._lock:
-            self._pulse_cache = {"cached_at": time.time(), "data": base_pulse}
+            self._pulse_cache = {"cached_at": time.time(), "identity": _pulse_key(snapshot_data), "data": base_pulse}
 
     def _build_analysis_prompt(self, symbol: str, stock_data: Dict[str, Any], timeframe: int) -> str:
         price = stock_data.get("price", 0.0)
@@ -558,6 +631,7 @@ class LayaAIEngine:
             f"- Session VWAP: ₹{vwap:.2f} | RSI(14): {rsi:.1f} | RVOL: {rvol:.2f}x\n"
             f"- Decision: {action} (Conviction: {conviction}%, Grade: {grade})\n"
             f"- Key Levels: Invalidation (SL) ₹{sl} | Target 1 ₹{t1} | Target 2 ₹{t2} | R:R = 1:{rr}\n\n"
+            f"- Closed-candle PDF calculations (separate from legacy setup): {json.dumps(stock_data.get('daily_quant', {}), default=str)}\n"
             f"Instructions:\n"
             f"Output exactly 3 bullet points, each under 25 words.\n"
             f"Reference ONLY the numbers provided above. Never invent levels or dates."
@@ -597,6 +671,7 @@ class LayaAIEngine:
             ),
             "session_date": stock_data.get("session_date"),
             "session_state": stock_data.get("session_state"),
+            "daily_quant": stock_data.get("daily_quant"),
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "standing_footer": "Technical analysis for information only. Not investment advice.",
         }
@@ -665,7 +740,7 @@ class LayaAIEngine:
         Otherwise immediately returns rules briefing with ai_pending: true and enqueues
         background LLM job. Subsequent poll calls retrieve completed LLM result.
         """
-        cache_key = f"{symbol.upper()}_{timeframe}"
+        cache_key = _analysis_key(symbol, timeframe, stock_data)
         now = time.time()
 
         with self._lock:
@@ -733,10 +808,11 @@ class LayaAIEngine:
         Returns cached LLM pulse (<10m) or rules briefing immediately with ai_pending: true.
         """
         now = time.time()
+        identity = _pulse_key(snapshot_data)
         with self._lock:
             cached = self._pulse_cache
 
-        if cached and not force_refresh:
+        if cached and cached.get("identity") == identity and not force_refresh:
             if (now - cached["cached_at"]) < PULSE_CACHE_TTL_SEC and cached["data"].get("source") == "local_llm":
                 data = dict(cached["data"])
                 data["ai_pending"] = False
@@ -810,6 +886,8 @@ class LayaAIEngine:
             "model": "Laya AI Rules Engine",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "standing_footer": "Technical analysis for information only. Not investment advice.",
+            "daily_ranking": snapshot_data.get("daily_ranking"),
+            "daily_ranking_summary": daily_ranking_reply(snapshot_data.get("daily_ranking")),
         }
 
         # Check for synchronous execution in tests or fast Ollama
@@ -819,6 +897,7 @@ class LayaAIEngine:
             f"- Tracked: {total} | Advancers: {len(gainers)} | Decliners: {len(losers)} (Breadth: {breadth_ratio*100:.0f}%)\n"
             f"- Signals: {buy_signals} Buy | {sell_signals} Sell | Regime: {regime}\n"
             f"- Leaders: {top_g_text} | Laggards: {top_l_text}\n\n"
+            f"{ranking_context(snapshot_data.get('daily_ranking'))}\n"
             f"Instructions:\n"
             f"Output exactly 2 concise paragraphs (under 60 words each).\n"
             f"Paragraph 1: Summarize market structure and breadth.\n"
@@ -833,7 +912,7 @@ class LayaAIEngine:
             base_pulse["model"] = f"{self.model} (Local Ollama)"
             base_pulse["ai_pending"] = False
             with self._lock:
-                self._pulse_cache = {"cached_at": now, "data": base_pulse}
+                self._pulse_cache = {"cached_at": now, "identity": identity, "data": base_pulse}
             return base_pulse
 
         # Return rules briefing and enqueue background job
@@ -865,7 +944,14 @@ class LayaAIEngine:
         if not clean_query:
             return {"error": "empty_query", "detail": "Message query cannot be empty"}
 
-        context_lines = []
+        if re.search(r"\b(best|worst|strongest|weakest|top stock|bottom stock|daily rank|ranking)\b", clean_query, re.I):
+            ranking = (snapshot_data or {}).get("daily_ranking")
+            return {"reply": daily_ranking_reply(ranking), "daily_ranking": ranking,
+                    "symbol": current_symbol, "source": "rules_engine", "backend": "rules",
+                    "model": "Laya deterministic PDF formula engine", "weights_trained": False,
+                    "timestamp": datetime.now(timezone.utc).isoformat()}
+
+        context_lines = [ranking_context((snapshot_data or {}).get("daily_ranking"))]
         if snapshot_data and "stocks" in snapshot_data:
             stocks = snapshot_data["stocks"]
             if current_symbol and current_symbol.upper() in stocks:
@@ -899,6 +985,7 @@ class LayaAIEngine:
             "reply": llm_output,
             "symbol": current_symbol,
             "source": "local_llm",
+            "backend": "ollama",
             "model": f"{self.model} (Local Ollama)",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "standing_footer": "Technical analysis for information only. Not investment advice.",

@@ -9,7 +9,9 @@ Never fabricates or invents market data on failure.
 from __future__ import annotations
 import json
 import logging
+import math
 import socket
+import sqlite3
 import sys
 import threading
 import time
@@ -25,16 +27,24 @@ sys.path.insert(0, str(Path(__file__).parent))
 from decision_engine import evaluate_ai_decision
 from market import (
     calculate_atr,
+    calculate_bollinger_bandwidth,
+    calculate_camarilla,
     calculate_composite_score,
+    calculate_cpr,
     calculate_ema,
     calculate_order_blocks,
     calculate_rsi,
     calculate_rvol,
+    calculate_supertrend,
     calculate_support_resistance,
     calculate_vwap,
+    calculate_vwap_bands,
 )
 from stock_database import get_stock_database
 from market_schedule import get_market_schedule_info
+from market_schedule import IST
+from daily_quant import analyze_daily_stock, rank_daily_stocks
+from laya_ai import query_laya_decision
 
 logger = logging.getLogger("marketscope.scraper")
 
@@ -75,6 +85,113 @@ SECTOR_MAP = {
     "ULTRACEMCO": ("UltraTech Cement", "Materials"),
     "JSWSTEEL": ("JSW Steel", "Metals"),
 }
+
+
+def calculate_daily_quant_from_archive(
+    symbol: str, session_date: str, candles: Optional[List[Dict[str, Any]]] = None,
+    archive: Any = None, now: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    """Calculate the daily score from fixed five-minute bars without extra requests.
+
+    Chart intervals never change the daily ranking. Existing closed archive bars
+    provide indicator warm-up; only the selected date supplies session inputs.
+    """
+    from candle_archive import get_candle_archive
+    clock = now or datetime.now(timezone.utc)
+    if clock.tzinfo is None:
+        clock = clock.replace(tzinfo=timezone.utc)
+    boundary = datetime.strptime(session_date, "%Y-%m-%d").replace(tzinfo=IST)
+    session_candles = candles
+    history, prior = [], None
+    try:
+        archive = archive or get_candle_archive()
+        if session_candles is None:
+            session_candles = archive.get_candles_for_session(symbol, 5, session_date)
+        history = list(archive.get_recent_candles_before(symbol, 5, int(boundary.timestamp()), limit=100) or [])
+        prior = archive.get_prior_session_ohlc(symbol, 5, session_date)
+    except (OSError, ValueError, TypeError, AttributeError, sqlite3.Error) as exc:
+        logger.warning("Daily formula archive inputs unavailable for %s: %s", symbol, exc)
+        history, prior = [], None
+    # Raw chart results can contain several dates. Only this date supplies
+    # session observations; archived bars strictly before it supply warm-up.
+    selected = []
+    for candle in session_candles or []:
+        try:
+            raw_timestamp = candle.get("t", candle.get("ts"))
+            if isinstance(raw_timestamp, bool):
+                selected.append(candle)
+                continue
+            timestamp = float(raw_timestamp)
+            if timestamp <= 0:
+                selected.append(candle)
+                continue
+            if datetime.fromtimestamp(timestamp, IST).date() == boundary.date():
+                selected.append(candle)
+        except (TypeError, ValueError, OverflowError, OSError, AttributeError):
+            # Preserve malformed selected input for the analyzer's explicit
+            # rejection rather than silently removing a missing observation.
+            selected.append(candle)
+    # Warm-up may start partway through an older session, but it may not bridge
+    # an unobserved in-session gap or an incomplete overnight boundary. Use only
+    # the latest contiguous suffix ending at a regular session close. A partial
+    # old archive must not invalidate an otherwise complete current session.
+    regular_history = []
+    for candle in history:
+        stamp = int(candle["t"])
+        dt = datetime.fromtimestamp(stamp, IST)
+        market_open = dt.replace(hour=9, minute=15, second=0, microsecond=0)
+        market_close = dt.replace(hour=15, minute=15, second=0, microsecond=0)
+        if market_open.timestamp() <= stamp < market_close.timestamp() and (stamp - int(market_open.timestamp())) % 300 == 0:
+            regular_history.append(candle)
+    history = []
+    def valid_warmup(candle):
+        try:
+            values = [candle[k] for k in ("o", "h", "l", "c", "v")]
+            if any(isinstance(value, bool) for value in values):
+                return False
+            o, h, l, c, v = map(float, values)
+            return all(math.isfinite(value) and value > 0 for value in (o,h,l,c,v)) and l <= min(o,c) <= max(o,c) <= h
+        except (KeyError, TypeError, ValueError):
+            return False
+    if regular_history:
+        last = datetime.fromtimestamp(regular_history[-1]["t"], IST)
+        if last.hour == 15 and last.minute == 10 and valid_warmup(regular_history[-1]):
+            history = [regular_history[-1]]
+            for candle in reversed(regular_history[:-1]):
+                if not valid_warmup(candle):
+                    break
+                left = datetime.fromtimestamp(candle["t"], IST)
+                right = datetime.fromtimestamp(history[0]["t"], IST)
+                adjacent = right.timestamp() - left.timestamp() == 300
+                overnight = left.date() < right.date() and left.hour == 15 and left.minute == 10 and right.hour == 9 and right.minute == 15
+                if not adjacent and not overnight:
+                    break
+                history.insert(0, candle)
+    confirmed = []
+    for original in history + selected:
+        if not isinstance(original, dict):
+            confirmed.append(original)
+            continue
+        candle = dict(original)
+        try:
+            timestamp = float(candle.get("t", candle.get("ts", 0)))
+        except (TypeError, ValueError):
+            confirmed.append(candle)
+            continue
+        # The upstream chart API marks its last bar open even after that session
+        # has ended. Confirm it only after its five-minute interval elapsed.
+        if timestamp > 0 and timestamp + 300 <= clock.timestamp():
+            candle["closed"] = True
+            if "is_closed" in candle:
+                candle["is_closed"] = True
+        confirmed.append(candle)
+    result = analyze_daily_stock(
+        confirmed, session_date, timeframe=5, now=clock,
+        prior_session=prior if isinstance(prior, dict) else None,
+        window_close="15:15",
+    )
+    result["warmup_candle_count"] = len(history)
+    return result
 
 
 class RealTimeScraperFeed:
@@ -230,6 +347,7 @@ class RealTimeScraperFeed:
                     volumes = quote_indicators.get("volume", [])
 
                     candles: List[Dict[str, Any]] = []
+                    observed_now = time.time()
                     for i in range(len(timestamps)):
                         o = opens[i] if i < len(opens) else None
                         h = highs[i] if i < len(highs) else None
@@ -247,7 +365,7 @@ class RealTimeScraperFeed:
                             "l": round(float(l), 2),
                             "c": round(float(c), 2),
                             "v": int(v or 0),
-                            "closed": i < (len(timestamps) - 1),
+                            "closed": timestamps[i] + timeframe * 60 <= observed_now,
                         })
 
                     # If no valid candles were extracted, we do NOT invent any!
@@ -459,6 +577,49 @@ class RealTimeScraperFeed:
         day_high = raw_data.get("day_high") or (max(float(c.get("h", c.get("high", current_price))) for c in candles) if candles else current_price)
         day_low = raw_data.get("day_low") or (min(float(c.get("l", c.get("low", current_price))) for c in candles) if candles else current_price)
 
+        # Quant indicator suite from PDF formula reference
+        cpr = calculate_cpr(day_high, day_low, prev_close if prev_close else current_price)
+        camarilla = calculate_camarilla(day_high, day_low, prev_close if prev_close else current_price)
+        supertrend = calculate_supertrend(candles, period=10, multiplier=3.0)
+        vwap_bands = calculate_vwap_bands(candles)
+
+        # Laya AI System 1 decision query
+        laya_decision = query_laya_decision(
+            symbol=symbol,
+            stock_data={
+                "price": current_price,
+                "score": score_dict.get("score"),
+                "vwap": vwap,
+                "rsi": rsi,
+                "rvol": rvol,
+                "change_pct": change_pct or 0.0,
+            },
+            timeout=1.0,
+        )
+
+        ai_decision = evaluate_ai_decision(
+            symbol=symbol,
+            price=current_price,
+            metrics=score_dict,
+            vwap=vwap,
+            support=sup,
+            resistance=res,
+            rvol=rvol,
+            order_blocks=order_blocks,
+            config=cfg,
+            atr=atr_val,
+            supertrend=supertrend,
+            cpr=cpr,
+            camarilla=camarilla,
+            laya_decision=laya_decision,
+        )
+
+        trajectory_pts: List[float] = []
+        for c in candles:
+            close_val = float(c.get("c", c.get("close", session_open)))
+            pct = round(((close_val - session_open) / max(0.01, session_open)) * 100, 2)
+            trajectory_pts.append(pct)
+
         stock_payload = {
             "symbol": symbol,
             "name": name,
@@ -468,6 +629,8 @@ class RealTimeScraperFeed:
             "price": current_price,
             "score": score_dict.get("score"),
             "signal": score_dict.get("signal"),
+            "rank_tier": score_dict.get("rank_tier", "NORMAL"),
+            "tier": score_dict.get("rank_tier", "NORMAL"),
             "previous_close": prev_close,
             "session_open": session_open,
             "change_pct": change_pct,
@@ -478,14 +641,24 @@ class RealTimeScraperFeed:
             "volume": volume,
             "rvol": rvol,
             "vwap": vwap,
+            "vwap_bands": vwap_bands,
+            "cpr": cpr,
+            "camarilla": camarilla,
+            "supertrend": supertrend,
             "support": sup,
             "resistance": res,
             "order_blocks": order_blocks,
             "metrics": score_dict,
             "confirmed": score_dict,
             "ai_decision": ai_decision,
+            "laya_decision": laya_decision,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
+
+        session_date = datetime.now(IST).date().isoformat()
+        stock_payload["daily_quant"] = calculate_daily_quant_from_archive(
+            symbol, session_date, candles=candles if timeframe == 5 else None,
+        )
 
         return symbol, stock_payload, trajectory_pts
 
@@ -651,6 +824,18 @@ class RealTimeScraperFeed:
             "sectors": sectors,
             "stocks": stocks,
         }
+        session_date = datetime.now(IST).date().isoformat()
+        daily_ranking = rank_daily_stocks(stocks, session_date, session_state="LIVE")
+        snapshot["daily_ranking"] = daily_ranking
+        snapshot["best_stock"] = daily_ranking.get("best")
+        snapshot["worst_stock"] = daily_ranking.get("worst")
+        snapshot["spotlight"]["best_stock"] = daily_ranking.get("best")
+        snapshot["spotlight"]["worst_stock"] = daily_ranking.get("worst")
+        snapshot["tiers_summary"] = daily_ranking.get("tiers_summary", {
+            "bullish_count": sum(1 for s in ok_stocks.values() if (s.get("score") or 0) > 70),
+            "bearish_count": sum(1 for s in ok_stocks.values() if s.get("score") is not None and s.get("score") < 50),
+            "normal_count": sum(1 for s in ok_stocks.values() if s.get("score") is not None and 50 <= s.get("score") <= 70),
+        })
 
         with self._lock:
             self._cache = snapshot

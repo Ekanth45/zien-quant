@@ -278,6 +278,8 @@ def calculate_composite_score(
         return {
             "score": None,
             "signal": "UNAVAILABLE",
+            "rank_tier": "UNAVAILABLE",
+            "tier": "UNAVAILABLE",
             "components": {},
             "raw": {},
         }
@@ -315,6 +317,15 @@ def calculate_composite_score(
     score = round(50.0 + weighted_sum / 2.0)
     score = max(0, min(100, int(score)))
 
+    # Strict quant ranking tiers from PDF formula engine:
+    # Score > 70: BULLISH, Score < 50: BEARISH, 50-70: NORMAL
+    if score > 70:
+        rank_tier = "BULLISH"
+    elif score < 50:
+        rank_tier = "BEARISH"
+    else:
+        rank_tier = "NORMAL"
+
     if score >= thresh:
         signal = "BUY"
     elif score <= (100 - thresh):
@@ -325,6 +336,8 @@ def calculate_composite_score(
     return {
         "score": score,
         "signal": signal,
+        "rank_tier": rank_tier,
+        "tier": rank_tier,
         "components": {
             "trend": round(trend_contrib, 2),
             "momentum": round(momentum_contrib, 2),
@@ -449,6 +462,196 @@ def calculate_order_blocks(candles: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
     # Return up to last 4 surviving zones
     return active_zones[-4:]
+
+
+def calculate_cpr(high: float, low: float, close: float) -> Optional[Dict[str, Any]]:
+    """
+    Central Pivot Range (CPR) from prior session high, low, close:
+      Pivot (P) = (High + Low + Close) / 3
+      Bottom Central (BC) = (High + Low) / 2
+      Top Central (TC) = 2 * Pivot - BC
+    Ordered bounds: bc = min(BC, TC), tc = max(BC, TC).
+    width_pct = 100 * abs(TC - BC) / Pivot.
+    Narrow CPR (width_pct < 0.25) indicates high trending/breakout potential.
+    """
+    if high <= 0 or low <= 0 or close <= 0 or high < low:
+        return None
+    pivot = (high + low + close) / 3.0
+    bc_raw = (high + low) / 2.0
+    tc_raw = 2.0 * pivot - bc_raw
+    bc = min(bc_raw, tc_raw)
+    tc = max(bc_raw, tc_raw)
+    width = abs(tc - bc)
+    width_pct = (width / pivot) * 100.0 if pivot > 0 else 0.0
+    return {
+        "pivot": round(pivot, 2),
+        "bc": round(bc, 2),
+        "tc": round(tc, 2),
+        "width": round(width, 2),
+        "width_pct": round(width_pct, 4),
+        "is_narrow": width_pct < 0.25,
+    }
+
+
+def calculate_camarilla(high: float, low: float, close: float) -> Optional[Dict[str, float]]:
+    """
+    Camarilla Pivots from prior session high, low, close:
+      Spread = High - Low
+      H1..H4 = Close + Spread * 1.1 / (12, 6, 4, 2)
+      L1..L4 = Close - Spread * 1.1 / (12, 6, 4, 2)
+      H5 = (High / Low) * Close
+      L5 = 2 * Close - H5
+    H3 / L3 are mean-reversion reversal boundaries.
+    H4 / L4 are breakout / breakdown acceleration levels.
+    """
+    if high <= 0 or low <= 0 or close <= 0 or high < low:
+        return None
+    spread = high - low
+    h1 = close + spread * 1.1 / 12.0
+    h2 = close + spread * 1.1 / 6.0
+    h3 = close + spread * 1.1 / 4.0
+    h4 = close + spread * 1.1 / 2.0
+    l1 = close - spread * 1.1 / 12.0
+    l2 = close - spread * 1.1 / 6.0
+    l3 = close - spread * 1.1 / 4.0
+    l4 = close - spread * 1.1 / 2.0
+    h5 = (high / low) * close
+    l5 = 2.0 * close - h5
+    return {
+        "h1": round(h1, 2), "h2": round(h2, 2), "h3": round(h3, 2), "h4": round(h4, 2), "h5": round(h5, 2),
+        "l1": round(l1, 2), "l2": round(l2, 2), "l3": round(l3, 2), "l4": round(l4, 2), "l5": round(l5, 2),
+    }
+
+
+def calculate_supertrend(
+    candles: List[Dict[str, Any]],
+    period: int = 10,
+    multiplier: float = 3.0,
+) -> Optional[Dict[str, Any]]:
+    """
+    Supertrend indicator with Welles Wilder ATR and ratcheting bands:
+      Basic Upper Band (BUB) = (High + Low) / 2 + multiplier * ATR
+      Basic Lower Band (BLB) = (High + Low) / 2 - multiplier * ATR
+      Final Upper Band ratchets DOWN unless previous close broke it.
+      Final Lower Band ratchets UP unless previous close broke it.
+      Direction switches to +1 (bullish) when Close > Final Upper Band.
+      Direction switches to -1 (bearish) when Close < Final Lower Band.
+    """
+    if not candles or len(candles) < period + 1:
+        return None
+
+    tr_list: List[float] = [float(candles[0].get("h", candles[0].get("high", 0.0))) - float(candles[0].get("l", candles[0].get("low", 0.0)))]
+    for i in range(1, len(candles)):
+        h = float(candles[i].get("h", candles[i].get("high", 0.0)))
+        l = float(candles[i].get("l", candles[i].get("low", 0.0)))
+        prev_c = float(candles[i - 1].get("c", candles[i - 1].get("close", 0.0)))
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        tr_list.append(tr)
+
+    atr_series: List[Optional[float]] = [None] * len(candles)
+    if len(tr_list) >= period:
+        atr_series[period - 1] = sum(tr_list[:period]) / float(period)
+        for i in range(period, len(tr_list)):
+            atr_series[i] = (atr_series[i - 1] * (period - 1) + tr_list[i]) / float(period)
+
+    upper = lower = line = None
+    direction = 0
+    for i, candle in enumerate(candles):
+        curr_atr = atr_series[i]
+        if curr_atr is None:
+            continue
+        h = float(candle.get("h", candle.get("high", 0.0)))
+        l = float(candle.get("l", candle.get("low", 0.0)))
+        c = float(candle.get("c", candle.get("close", 0.0)))
+        midpoint = (h + l) / 2.0
+        basic_upper = midpoint + multiplier * curr_atr
+        basic_lower = midpoint - multiplier * curr_atr
+
+        if upper is None:
+            upper, lower, line = basic_upper, basic_lower, basic_upper
+            direction = -1
+        else:
+            prev_upper, prev_lower = upper, lower
+            prev_c = float(candles[i - 1].get("c", candles[i - 1].get("close", 0.0)))
+            upper = basic_upper if basic_upper < prev_upper or prev_c > prev_upper else prev_upper
+            lower = basic_lower if basic_lower > prev_lower or prev_c < prev_lower else prev_lower
+            if line == prev_upper:
+                direction = 1 if c > upper else -1
+            else:
+                direction = -1 if c < lower else 1
+            line = lower if direction == 1 else upper
+
+    if line is None:
+        return None
+    return {
+        "value": round(line, 2),
+        "direction": direction,
+        "upper": round(upper, 2) if upper is not None else None,
+        "lower": round(lower, 2) if lower is not None else None,
+        "period": period,
+        "multiplier": multiplier,
+    }
+
+
+def calculate_vwap_bands(candles: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Intraday Volume Weighted Average Price (VWAP) with Standard Deviation Bands (+/- 1 sigma, +/- 2 sigma):
+      Typical Price = (High + Low + Close) / 3
+      VWAP = sum(Typical Price * Volume) / sum(Volume)
+      Variance = sum(Volume * (Typical Price - VWAP)^2) / sum(Volume)
+      Sigma = sqrt(Variance)
+    """
+    if not candles:
+        return None
+
+    cum_vol = 0.0
+    cum_tp_vol = 0.0
+    typical_prices: List[float] = []
+    volumes: List[float] = []
+
+    for c in candles:
+        h = float(c.get("h", c.get("high", 0.0)))
+        l = float(c.get("l", c.get("low", 0.0)))
+        cl = float(c.get("c", c.get("close", 0.0)))
+        v = float(c.get("v", c.get("volume", 0.0)))
+        tp = (h + l + cl) / 3.0
+        typical_prices.append(tp)
+        volumes.append(v)
+        cum_vol += v
+        cum_tp_vol += tp * v
+
+    if cum_vol <= 0:
+        return None
+
+    vwap = cum_tp_vol / cum_vol
+    variance = sum(v * (tp - vwap) ** 2 for tp, v in zip(typical_prices, volumes)) / cum_vol
+    sigma = math.sqrt(max(0.0, variance))
+
+    return {
+        "vwap": round(vwap, 2),
+        "sigma": round(sigma, 4),
+        "upper1": round(vwap + sigma, 2),
+        "lower1": round(vwap - sigma, 2),
+        "upper2": round(vwap + 2.0 * sigma, 2),
+        "lower2": round(vwap - 2.0 * sigma, 2),
+    }
+
+
+def calculate_bollinger_bandwidth(closes: List[float], period: int = 20, num_std: float = 2.0) -> Optional[float]:
+    """
+    Bollinger Bandwidth = (Upper Band - Lower Band) / Middle Band
+    where Middle = SMA(period), Upper = Middle + num_std * std, Lower = Middle - num_std * std.
+    """
+    if not closes or len(closes) < period or period <= 0:
+        return None
+    window = closes[-period:]
+    mean = sum(window) / float(period)
+    if mean <= 0:
+        return None
+    variance = sum((x - mean) ** 2 for x in window) / float(period)
+    std = math.sqrt(variance)
+    bandwidth = (2.0 * num_std * std) / mean
+    return round(bandwidth, 4)
 
 
 def aggregate_candles(candles_1m: List[Dict[str, Any]], timeframe: int = 5) -> List[Dict[str, Any]]:

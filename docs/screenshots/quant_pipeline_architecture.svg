@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 600" width="1160" height="600" style="background:#090d16; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="pipeBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1120"/>
+      <stop offset="100%" stop-color="#070a12"/>
+    </linearGradient>
+    <linearGradient id="boxGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="cyanAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="purpleAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="greenAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#c084fc"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1160" height="600" fill="url(#pipeBg)"/>
+  
+  <!-- Header -->
+  <text x="50" y="48" fill="#f8fafc" font-size="24" font-weight="800">ZIEN QUANT END-TO-END PIPELINE ARCHITECTURE</text>
+  <text x="50" y="72" fill="#94a3b8" font-size="13">Mathematical Indicator Extraction • 0–100 Tiers Ranking • Laya AI ModernBERT Dual Confirmation</text>
+
+  <!-- Stage 1: Market Ingestion & Archive -->
+  <g transform="translate(50, 100)">
+    <rect width="210" height="450" rx="10" fill="url(#boxGrad1)" stroke="#334155" stroke-width="1.5"/>
+    <rect x="0" y="0" width="210" height="34" rx="10" fill="#1e293b"/>
+    <text x="16" y="22" fill="#38bdf8" font-size="12" font-weight="700">1. DATA &amp; STORAGE</text>
+
+    <g transform="translate(16, 50)">
+      <rect width="178" height="65" rx="6" fill="#0f172a" stroke="#1e293b"/>
+      <text x="12" y="22" fill="#f1f5f9" font-size="12" font-weight="600">NSE Equities Feed</text>
+      <text x="12" y="38" fill="#94a3b8" font-size="10">Yahoo Finance Candle Fetcher</text>
+      <text x="12" y="52" fill="#64748b" font-size="10">5-min &amp; 1-min intervals</text>
+    </g>
+
+    <g transform="translate(16, 130)">
+      <rect width="178" height="65" rx="6" fill="#0f172a" stroke="#1e293b"/>
+      <text x="12" y="22" fill="#f1f5f9" font-size="12" font-weight="600">SQLite Candle Archive</text>
+      <text x="12" y="38" fill="#94a3b8" font-size="10">candles.db (WAL Mode)</text>
+      <text x="12" y="52" fill="#64748b" font-size="10">20,800+ historical bars</text>
+    </g>
+
+    <g transform="translate(16, 210)">
+      <rect width="178" height="65" rx="6" fill="#0f172a" stroke="#1e293b"/>
+      <text x="12" y="22" fill="#f1f5f9" font-size="12" font-weight="600">Stock Master DB</text>
+      <text x="12" y="38" fill="#94a3b8" font-size="10">stock_master.db</text>
+      <text x="12" y="52" fill="#64748b" font-size="10">2,613 symbols loaded</text>
+    </g>
+
+    <g transform="translate(16, 290)">
+      <rect width="178" height="65" rx="6" fill="#0f172a" stroke="#1e293b"/>
+      <text x="12" y="22" fill="#f1f5f9" font-size="12" font-weight="600">Market Schedule Engine</text>
+      <text x="12" y="38" fill="#94a3b8" font-size="10">IST Exchange Clock &amp; Calendar</text>
+      <text x="12" y="52" fill="#64748b" font-size="10">Pre-open, Live, Post, Holiday</text>
+    </g>
+
+    <g transform="translate(16, 370)">
+      <rect width="178" height="60" rx="6" fill="#0f172a" stroke="#1e293b"/>
+      <text x="12" y="22" fill="#34d399" font-size="12" font-weight="600">Zero Synthetic Data</text>
+      <text x="12" y="38" fill="#94a3b8" font-size="10">Real gaps preserved</text>
+      <text x="12" y="50" fill="#64748b" font-size="10">Strict provenance</text>
+    </g>
+  </g>
+
+  <!-- Flow Arrow 1 -> 2 -->
+  <line x1="265" y1="325" x2="295" y2="325" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Stage 2: Quant Math Engine -->
+  <g transform="translate(305, 100)">
+    <rect width="250" height="450" rx="10" fill="url(#boxGrad1)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="0" y="0" width="250" height="34" rx="10" fill="#0369a1"/>
+    <text x="16" y="22" fill="#f0f9ff" font-size="12" font-weight="700">2. QUANT MATH ENGINE (PDF)</text>
+
+    <!-- Indicators -->
+    <g transform="translate(16, 48)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#38bdf8" font-size="11" font-weight="700">Central Pivot Range (CPR)</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Pivot P, TC, BC &amp; CPR Width %</text>
+    </g>
+
+    <g transform="translate(16, 104)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#c084fc" font-size="11" font-weight="700">Camarilla Pivots (H1-H5 / L1-L5)</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Reversals at H3/L3, Breakouts H4/L4</text>
+    </g>
+
+    <g transform="translate(16, 160)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#34d399" font-size="11" font-weight="700">Supertrend (10, 3.0 ATR)</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Trailing stop-loss &amp; State flip (+1/-1)</text>
+    </g>
+
+    <g transform="translate(16, 216)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#fbbf24" font-size="11" font-weight="700">Session VWAP &amp; ±1σ Bands</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Cumulative volume-weighted variance</text>
+    </g>
+
+    <g transform="translate(16, 272)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#f472b6" font-size="11" font-weight="700">Wilder Smoothed RSI (14)</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">True Wilder exponential moving average</text>
+    </g>
+
+    <g transform="translate(16, 328)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#60a5fa" font-size="11" font-weight="700">Relative Volume (RVOL)</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Intraday candle vs 20-period baseline</text>
+    </g>
+
+    <g transform="translate(16, 384)">
+      <rect width="218" height="48" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#a78bfa" font-size="11" font-weight="700">Bollinger Bandwidth &amp; Squeeze</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">Volatility compression &amp; expansion</text>
+    </g>
+  </g>
+
+  <!-- Flow Arrow 2 -> 3 -->
+  <line x1="560" y1="325" x2="590" y2="325" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Stage 3: 0-100 Score & Tiers -->
+  <g transform="translate(600, 100)">
+    <rect width="250" height="450" rx="10" fill="url(#boxGrad1)" stroke="#10b981" stroke-width="1.5"/>
+    <rect x="0" y="0" width="250" height="34" rx="10" fill="#065f46"/>
+    <text x="16" y="22" fill="#ecfdf5" font-size="12" font-weight="700">3. 0–100 SCORING &amp; TIERS</text>
+
+    <!-- Formula Breakdown -->
+    <g transform="translate(16, 48)">
+      <rect width="218" height="90" rx="6" fill="#0f172a"/>
+      <text x="10" y="18" fill="#f1f5f9" font-size="11" font-weight="700">Composite Score Formula</text>
+      <text x="10" y="34" fill="#94a3b8" font-size="10">• Trend &amp; Supertrend: 25 pts</text>
+      <text x="10" y="48" fill="#94a3b8" font-size="10">• Pivot Levels (CPR/Camarilla): 25 pts</text>
+      <text x="10" y="62" fill="#94a3b8" font-size="10">• Volume Surge (RVOL): 20 pts</text>
+      <text x="10" y="76" fill="#94a3b8" font-size="10">• RSI (15 pts) + VWAP Bands (15 pts)</text>
+    </g>
+
+    <!-- Tiers Box -->
+    <g transform="translate(16, 148)">
+      <rect width="218" height="52" rx="6" fill="#064e3b" fill-opacity="0.3" stroke="#10b981"/>
+      <text x="10" y="20" fill="#34d399" font-size="12" font-weight="700">BULLISH TIER (BUY)</text>
+      <text x="10" y="38" fill="#a7f3d0" font-size="11">Score &gt; 70.0 / 100</text>
+    </g>
+
+    <g transform="translate(16, 208)">
+      <rect width="218" height="52" rx="6" fill="#1e293b" stroke="#64748b"/>
+      <text x="10" y="20" fill="#cbd5e1" font-size="12" font-weight="700">NORMAL TIER (NEUTRAL)</text>
+      <text x="10" y="38" fill="#94a3b8" font-size="11">Score 50.0 – 70.0 / 100</text>
+    </g>
+
+    <g transform="translate(16, 268)">
+      <rect width="218" height="52" rx="6" fill="#7f1d1d" fill-opacity="0.3" stroke="#ef4444"/>
+      <text x="10" y="20" fill="#f87171" font-size="12" font-weight="700">BEARISH TIER (SELL)</text>
+      <text x="10" y="38" fill="#fecaca" font-size="11">Score &lt; 50.0 / 100</text>
+    </g>
+
+    <!-- Best & Worst Selection -->
+    <g transform="translate(16, 332)">
+      <rect width="218" height="100" rx="6" fill="#0f172a" stroke="#334155"/>
+      <text x="10" y="20" fill="#f1f5f9" font-size="11" font-weight="700">Daily Spotlight Ranking</text>
+      <text x="10" y="38" fill="#34d399" font-size="10">Best Stock: Max Score (≥ 70)</text>
+      <text x="10" y="54" fill="#f87171" font-size="10">Worst Stock: Min Score (≤ 50)</text>
+      <text x="10" y="70" fill="#38bdf8" font-size="10">R:R Risk Gate: Ratio ≥ 1.5</text>
+      <text x="10" y="86" fill="#94a3b8" font-size="10">Zero Lookahead / Leakage</text>
+    </g>
+  </g>
+
+  <!-- Flow Arrow 3 -> 4 -->
+  <line x1="855" y1="325" x2="885" y2="325" stroke="#a855f7" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+  <!-- Stage 4: Laya AI & Delivery -->
+  <g transform="translate(895, 100)">
+    <rect width="220" height="450" rx="10" fill="url(#boxGrad1)" stroke="#a855f7" stroke-width="1.5"/>
+    <rect x="0" y="0" width="220" height="34" rx="10" fill="#6b21a8"/>
+    <text x="16" y="22" fill="#faf5ff" font-size="12" font-weight="700">4. LAYA AI &amp; INTERFACE</text>
+
+    <g transform="translate(16, 48)">
+      <rect width="188" height="85" rx="6" fill="#0f172a" stroke="#a855f7" stroke-opacity="0.4"/>
+      <text x="10" y="20" fill="#c084fc" font-size="12" font-weight="700">Laya ModernBERT</text>
+      <text x="10" y="36" fill="#94a3b8" font-size="10">System 1 Fast Classifier</text>
+      <text x="10" y="52" fill="#38bdf8" font-size="10">POST /v1/systemone</text>
+      <text x="10" y="68" fill="#a7f3d0" font-size="10">Sub-second Confirmation</text>
+    </g>
+
+    <g transform="translate(16, 142)">
+      <rect width="188" height="85" rx="6" fill="#0f172a" stroke="#a855f7" stroke-opacity="0.4"/>
+      <text x="10" y="20" fill="#c084fc" font-size="12" font-weight="700">Laya Quant Model</text>
+      <text x="10" y="36" fill="#94a3b8" font-size="10">Ollama laya-quant:latest</text>
+      <text x="10" y="52" fill="#94a3b8" font-size="10">Gemma 4:12b Reasoning</text>
+      <text x="10" y="68" fill="#e2e8f0" font-size="10">Trade Rationale &amp; Synthesis</text>
+    </g>
+
+    <g transform="translate(16, 236)">
+      <rect width="188" height="85" rx="6" fill="#0f172a" stroke="#334155"/>
+      <text x="10" y="20" fill="#38bdf8" font-size="12" font-weight="700">Workspace UI (/) </text>
+      <text x="10" y="36" fill="#94a3b8" font-size="10">Daily Ranking Panel</text>
+      <text x="10" y="52" fill="#94a3b8" font-size="10">Best &amp; Worst Stock Cards</text>
+      <text x="10" y="68" fill="#94a3b8" font-size="10">Interactive Copilot</text>
+    </g>
+
+    <g transform="translate(16, 330)">
+      <rect width="188" height="98" rx="6" fill="#0f172a" stroke="#334155"/>
+      <text x="10" y="20" fill="#38bdf8" font-size="12" font-weight="700">Flow River (/flow)</text>
+      <text x="10" y="36" fill="#94a3b8" font-size="10">HTML5 Canvas Stream</text>
+      <text x="10" y="52" fill="#94a3b8" font-size="10">75+ Intraday River Bars</text>
+      <text x="10" y="68" fill="#94a3b8" font-size="10">Zero-lag 60 FPS rendering</text>
+      <text x="10" y="84" fill="#34d399" font-size="10">0.5ms layout prep</text>
+    </g>
+  </g>
+</svg>

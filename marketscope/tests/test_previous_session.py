@@ -33,7 +33,13 @@ from session_manager import (
 )
 from candle_archive import CandleArchive
 from signal_journal import SignalJournal
-from tests.fixture_loader import load_test_fixtures, get_fixture_stock_candles
+try:
+    from marketscope.tests.fixture_loader import load_test_fixtures, get_fixture_stock_candles
+except ImportError:
+    try:
+        from tests.fixture_loader import load_test_fixtures, get_fixture_stock_candles
+    except ImportError:
+        from fixture_loader import load_test_fixtures, get_fixture_stock_candles
 
 
 class TestFrozenClockSessionState(unittest.TestCase):

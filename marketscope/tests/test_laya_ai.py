@@ -200,7 +200,13 @@ class TestServerAIEndpoints(unittest.TestCase):
     def setUp(self):
         import tempfile, shutil, os
         from security import DatabaseManager
-        from tests.fixture_loader import load_test_fixtures
+        try:
+            from marketscope.tests.fixture_loader import load_test_fixtures
+        except ImportError:
+            try:
+                from tests.fixture_loader import load_test_fixtures
+            except ImportError:
+                from fixture_loader import load_test_fixtures
         self.tmp_dir = tempfile.mkdtemp()
         self.db_path = os.path.join(self.tmp_dir, "test.db")
         self.db = DatabaseManager(self.db_path)
@@ -248,7 +254,9 @@ class TestServerAIEndpoints(unittest.TestCase):
         handler._send_json = lambda payload, status=200: sent_data.update(payload)
         handler._handle_ai_status()
         self.assertIn("target_model", sent_data)
-        self.assertEqual(sent_data["target_model"], "gemma4:12b")
+        # Local model selection is configurable; the endpoint reports that
+        # configured target rather than assuming one installed model name.
+        self.assertEqual(sent_data["target_model"], get_laya_engine().model)
 
     def test_ai_pulse_endpoint(self):
         from server import MarketScopeHandler

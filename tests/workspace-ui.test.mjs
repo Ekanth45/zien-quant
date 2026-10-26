@@ -16,7 +16,7 @@ function response(body, status = 200) {
   return { ok: status < 400, status, json: async () => structuredClone(body) };
 }
 
-async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS', trajectoryGap = false } = {}) {
+async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS', trajectoryGap = false, dailyRanking = null } = {}) {
   const { window, document } = parseHTML(html);
   const requests = [];
   const storage = new Map();
@@ -65,7 +65,7 @@ async function workspace({ offline = false, candlesUnavailable = false, sessionS
     const url = new URL(path, 'http://workspace.test');
     switch (url.pathname) {
       case '/api/bootstrap': return response({ config: { monitored_symbols: symbols, default_timeframe: 5, score_threshold: 65 }, catalogue: Object.fromEntries(symbols.map(s => [s, { name: rawStocks[s].name }])), session: { authenticated: false }, has_owner: false });
-      case '/api/market': return offline ? response({ error: 'feed_unavailable', detail: 'The received feed is offline.' }, 503) : response({ mode: 'live', data_mode: sessionState === 'LIVE' ? 'LIVE' : 'PREVIOUS_SESSION', session_state: sessionState, session_date: fixture.session_date, timeframe: Number(url.searchParams.get('timeframe')), stocks: rawStocks, trajectories: [{ symbol: 'RELIANCE', points: trajectoryGap ? [0, .3, null, 1.4] : [0, .3, .7, 1.4] }, { symbol: 'TCS', points: [0, -.2, -.7, -1.2] }] });
+      case '/api/market': return offline ? response({ error: 'feed_unavailable', detail: 'The received feed is offline.' }, 503) : response({ mode: 'live', data_mode: sessionState === 'LIVE' ? 'LIVE' : 'PREVIOUS_SESSION', session_state: sessionState, session_date: fixture.session_date, timeframe: Number(url.searchParams.get('timeframe')), stocks: rawStocks, daily_ranking: dailyRanking, trajectories: [{ symbol: 'RELIANCE', points: trajectoryGap ? [0, .3, null, 1.4] : [0, .3, .7, 1.4] }, { symbol: 'TCS', points: [0, -.2, -.7, -1.2] }] });
       case '/api/market/schedule': return response({ state: 'CLOSED', action: 'opens', target_timestamp: 1792986300, target_time_ist: '2026-10-26 09:15 IST' });
       case '/api/stocks/database': return response({ total_database: 2, total_matches: 2, stocks: symbols.map(s => ({ symbol: s, name: rawStocks[s].name, exchange: 'NSE' })) });
       case '/api/stock': return candlesUnavailable ? response({ error: 'candles_unavailable' }, 404) : response({ symbol: url.searchParams.get('symbol'), candles: fixture.stocks[url.searchParams.get('symbol')].candles });
@@ -170,4 +170,30 @@ test('automatic live-session charts refresh their bounded cache after the observ
     Date.now = originalNow;
   }
   assert.equal(count(), initial + 1, 'Selected live history must not stay permanently cached');
+});
+
+test('daily formula panel shows authoritative leaders and Laya answers with the same ranking', async () => {
+  const dailyRanking = { session_date: fixture.session_date, formula_version: 'pdf-quant-1', eligible_count: 2, excluded_count: 0,
+    best: {symbol:'RELIANCE',score:76.25,as_of:fixture.session_date+'T10:00:00Z',components:{ema:{contribution:14}}},
+    worst: {symbol:'TCS',score:23.75,as_of:fixture.session_date+'T10:00:00Z',components:{ema:{contribution:-14}}}, weights:{ema:20} };
+  const {document,requests}=await workspace({dailyRanking});
+  const panel=document.getElementById('dailyFormulaPanel');
+  assert.equal(panel.querySelectorAll('[data-daily-stock]').length,2);
+  assert.match(panel.textContent,/76.25/);
+  document.getElementById('dailyMethod').onclick();
+  assert.match(document.getElementById('modalBody').textContent,/Auditable daily ranking/);
+  document.getElementById('aiMessage').value='Which is the best and worst stock today?';
+  await document.getElementById('aiChatForm').onsubmit({preventDefault(){}});
+  assert.match(document.getElementById('aiConversation').textContent,/strongest observed RELIANCE/);
+  assert.match(document.getElementById('aiConversation').textContent,/weakest observed TCS/);
+  assert.ok(!requests.some(r=>r.path.startsWith('/api/ai/chat')));
+});
+
+test('missing or mismatched daily rankings cannot display forced winners', async () => {
+  for(const dailyRanking of [null,{session_date:'1999-01-01',best:{symbol:'RELIANCE',score:80},worst:{symbol:'TCS',score:20}}]){
+    const {document}=await workspace({dailyRanking});
+    const panel=document.getElementById('dailyFormulaPanel');
+    assert.equal(panel.querySelectorAll('[data-daily-stock]').length,0);
+    assert.match(panel.textContent,/Ranking unavailable/);
+  }
 });
