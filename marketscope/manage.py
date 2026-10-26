@@ -232,6 +232,8 @@ def cmd_doctor(args: argparse.Namespace) -> None:
 
     # 6. Ollama Reachability & Model
     ollama_host = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+    if not ollama_host.startswith("http://") and not ollama_host.startswith("https://"):
+        ollama_host = f"http://{ollama_host}"
     target_model = os.environ.get("OLLAMA_MODEL", "gemma4:12b")
     ollama_ok = False
     model_found = False
@@ -251,6 +253,8 @@ def cmd_doctor(args: argparse.Namespace) -> None:
                 print(f"[PASS] Ollama Model:         '{target_model}' is pulled and ready")
             else:
                 print(f"[WARN] Ollama Model:         '{target_model}' not found in Ollama (run: ollama pull {target_model})")
+            if any(m == "laya" or m.startswith("laya:") for m in models):
+                print(f"[PASS] Laya Decision Model:  'laya' (421M System 1) is active")
     except Exception:
         print(f"[INFO] Ollama Service:       Not reachable at {ollama_host} (optional: terminal falls back to rules engine)")
 
@@ -281,6 +285,8 @@ def cmd_doctor(args: argparse.Namespace) -> None:
 
 def cmd_check_ollama(args: argparse.Namespace) -> None:
     ollama_host = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+    if not ollama_host.startswith("http://") and not ollama_host.startswith("https://"):
+        ollama_host = f"http://{ollama_host}"
     target_model = os.environ.get("OLLAMA_MODEL", "gemma4:12b")
     try:
         import urllib.request
@@ -293,6 +299,8 @@ def cmd_check_ollama(args: argparse.Namespace) -> None:
             else:
                 print(f"[WARN] Ollama is running, but model '{target_model}' is not pulled.")
                 print(f"       Run: ollama pull {target_model}")
+            if any(m == "laya" or m.startswith("laya:") for m in models):
+                print("[OK] Laya decision model ('laya') is active.")
     except Exception:
         print(f"[INFO] Ollama not detected at {ollama_host} (Optional: terminal falls back to rules engine).")
 

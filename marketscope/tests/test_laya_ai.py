@@ -145,6 +145,57 @@ class TestLayaAIEngine(unittest.TestCase):
             self.assertEqual(reply_err.get("error"), "llm_unavailable")
 
 
+    def test_call_laya_decision(self):
+        stock_data = {
+            "price": 2540.0,
+            "change_pct": 1.8,
+            "vwap": 2525.0,
+            "rvol": 1.6,
+            "metrics": {"score": 75, "signal": "BUY", "raw": {"rsi": 62.4}},
+        }
+        mock_response_data = {
+            "model": "laya",
+            "answers": {
+                "trade_bias": {
+                    "type": "choice",
+                    "choice": "bullish",
+                    "probabilities": {"bullish": 0.75, "bearish": 0.15, "neutral": 0.10},
+                    "confidence": 0.60,
+                }
+            }
+        }
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_cm = MagicMock()
+            mock_cm.read.return_value = json.dumps(mock_response_data).encode("utf-8")
+            mock_urlopen.return_value.__enter__.return_value = mock_cm
+
+            res = self.engine._call_laya_decision("RELIANCE", stock_data)
+            self.assertIsNotNone(res)
+            self.assertEqual(res["model"], "laya")
+            self.assertEqual(res["choice"], "bullish")
+            self.assertEqual(res["confidence"], 0.60)
+            self.assertEqual(res["probabilities"]["bullish"], 0.75)
+
+    def test_check_status_includes_decision_model(self):
+        mock_tags_data = {
+            "models": [
+                {"name": "gemma4:12b"},
+                {"name": "laya:latest"},
+                {"name": "laya-ai:latest"},
+            ]
+        }
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_cm = MagicMock()
+            mock_cm.read.return_value = json.dumps(mock_tags_data).encode("utf-8")
+            mock_urlopen.return_value.__enter__.return_value = mock_cm
+
+            status = self.engine.check_status()
+            self.assertTrue(status["online"])
+            self.assertEqual(status["decision_model"], "laya")
+            self.assertTrue(status["decision_model_available"])
+            self.assertTrue(status["model_available"])
+
+
 class TestServerAIEndpoints(unittest.TestCase):
     def setUp(self):
         import tempfile, shutil, os

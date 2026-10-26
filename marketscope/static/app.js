@@ -1496,7 +1496,12 @@ function renderLayaBriefing(data) {
 
   const isLLM = data.source === 'local_llm';
   if (el.layaLlmModelTag) {
-    el.layaLlmModelTag.textContent = isLLM ? 'AI - gemma4:12b' : 'Rules engine';
+    if (isLLM) {
+      const modelName = data.model ? data.model.replace(' (Local Ollama)', '').split(' ')[0] : 'laya-ai';
+      el.layaLlmModelTag.textContent = `AI - ${modelName}`;
+    } else {
+      el.layaLlmModelTag.textContent = 'Rules engine';
+    }
   }
   if (el.layaLlmSourceTag) {
     el.layaLlmSourceTag.textContent = isLLM ? 'Local LLM' : 'Rules Engine';
@@ -1506,6 +1511,20 @@ function renderLayaBriefing(data) {
 
   // Clear container
   el.layaLlmBriefContent.replaceChildren();
+
+  // If Laya decision model provided System 1 classification, display badge
+  if (data.laya_decision && data.laya_decision.choice) {
+    const layaDec = data.laya_decision;
+    const decChip = document.createElement('div');
+    const bias = String(layaDec.choice).toUpperCase();
+    const isBull = bias === 'BULLISH';
+    const isBear = bias === 'BEARISH';
+    const bg = isBull ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60' : (isBear ? 'bg-rose-950/80 text-rose-300 border-rose-800/60' : 'bg-slate-800/80 text-slate-300 border-slate-700/60');
+    decChip.className = `inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-bold border mb-2 mr-2 ${bg}`;
+    const confPct = Math.round((layaDec.confidence || 0) * 100);
+    decChip.textContent = `⚡ Laya Decision: ${bias} (${confPct}% conf)`;
+    el.layaLlmBriefContent.appendChild(decChip);
+  }
 
   // If pending, show pulsing indicator
   if (data.ai_pending) {

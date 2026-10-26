@@ -23,6 +23,7 @@ logger = logging.getLogger("marketscope.laya_ai")
 
 OLLAMA_DEFAULT_HOST = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "gemma4:12b"
+DECISION_MODEL = "laya"
 ANALYSIS_CACHE_TTL_SEC = 600  # 10 minutes cache for LLM synthesis
 PULSE_CACHE_TTL_SEC = 600     # 10 minutes cache for LLM pulse
 
@@ -244,8 +245,11 @@ class LayaAIEngine:
         def _warmup():
             t0 = time.time()
             try:
+                warmup_model = self.model
+                if warmup_model == "laya":
+                    warmup_model = "laya-ai"
                 body = {
-                    "model": self.model,
+                    "model": warmup_model,
                     "prompt": "ping",
                     "stream": False,
                     "think": False,
@@ -282,13 +286,17 @@ class LayaAIEngine:
             )
             with urllib.request.urlopen(req, timeout=3.0) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                models = [m.get("name") for m in data.get("models", [])]
+                models = [m.get("name", "") for m in data.get("models", [])]
                 latency = round((time.time() - t0) * 1000, 1)
-                is_ready = any(self.model in m for m in models)
+                decision_model_available = any(m == "laya" or m.startswith("laya:") for m in models)
+                generative_model_available = any(self.model in m or m.startswith(self.model.split(":")[0]) for m in models)
+                is_ready = generative_model_available or decision_model_available
                 return {
                     "online": True,
                     "host": self.ollama_host,
                     "target_model": self.model,
+                    "decision_model": DECISION_MODEL,
+                    "decision_model_available": decision_model_available,
                     "model_available": is_ready,
                     "model_loaded": self._model_loaded,
                     "installed_models": models,
@@ -302,6 +310,8 @@ class LayaAIEngine:
                 "online": False,
                 "host": self.ollama_host,
                 "target_model": self.model,
+                "decision_model": DECISION_MODEL,
+                "decision_model_available": False,
                 "model_available": False,
                 "model_loaded": self._model_loaded,
                 "error": str(e),
@@ -322,9 +332,14 @@ class LayaAIEngine:
         Executes prompt on local Ollama server sending think: false, keep_alive: 30m,
         and configurable num_ctx (2048 for analysis, 4096 for chat). Parses ONLY the 'response' field, ignoring 'thinking'.
         """
+        model_name = self.model
+        if model_name == "laya":
+            # 'laya' is an Ollama System 1 decision model. For generative synthesis, route to laya-ai or gemma4:12b
+            model_name = "laya-ai"
+
         url = f"{self.ollama_host}/api/generate"
         body = {
-            "model": self.model,
+            "model": model_name,
             "prompt": prompt,
             "stream": False,
             "think": False,
@@ -348,9 +363,89 @@ class LayaAIEngine:
                 response = data.get("response", "").strip()
                 if response:
                     return response
+        except urllib.error.HTTPError as http_err:
+            if http_err.code == 400 and model_name != "gemma4:12b":
+                # Fallback to base gemma4:12b if custom model failed to generate
+                try:
+                    body["model"] = "gemma4:12b"
+                    payload = json.dumps(body).encode("utf-8")
+                    req = urllib.request.Request(
+                        url,
+                        data=payload,
+                        headers={"Content-Type": "application/json", "User-Agent": "MarketScope-LayaAI"},
+                    )
+                    with urllib.request.urlopen(req, timeout=eff_timeout) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        response = data.get("response", "").strip()
+                        if response:
+                            return response
+                except Exception as fb_err:
+                    logger.warning("Generative fallback to gemma4:12b failed: %s", fb_err)
+            self._last_error = str(http_err)
+            logger.warning("Local LLM call failed: %s", http_err)
         except Exception as err:
             self._last_error = str(err)
             logger.warning("Local LLM call failed or timed out: %s", err)
+        return None
+
+    def _call_laya_decision(
+        self,
+        symbol: str,
+        stock_data: Dict[str, Any],
+        timeout: float = 3.0,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Executes ultra-fast (sub-second) classification via Ollama's System 1
+        decision endpoint (/v1/systemone) using the 'laya' decision model.
+        Returns calibrated choice, probabilities, and confidence score.
+        """
+        price = stock_data.get("price", 0.0)
+        vwap = stock_data.get("vwap", price)
+        metrics = stock_data.get("metrics", {})
+        raw = metrics.get("raw", {})
+        rsi = raw.get("rsi", 50.0)
+        rvol = stock_data.get("rvol", 1.0)
+        change_pct = stock_data.get("change_pct", 0.0)
+
+        state_text = (
+            f"Stock {symbol} trading at ₹{price:.2f} ({change_pct:+.2f}%). "
+            f"Session VWAP is ₹{vwap:.2f}, RSI(14) is {rsi:.1f}, RVOL is {rvol:.2f}x."
+        )
+
+        payload = {
+            "model": DECISION_MODEL,
+            "state": state_text,
+            "questions": {
+                "trade_bias": {
+                    "type": "choice",
+                    "instructions": "Determine technical trade bias for Indian equities.",
+                    "criteria": {
+                        "bullish": "Price above VWAP with healthy RSI and volume expansion",
+                        "bearish": "Price below VWAP with deteriorating momentum or breakdown",
+                        "neutral": "Range bound consolidation or mixed indicators without clear momentum"
+                    }
+                }
+            }
+        }
+        url = f"{self.ollama_host}/v1/systemone"
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "MarketScope-LayaAI/SystemOne"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                answers = data.get("answers", {}).get("trade_bias", {})
+                if answers:
+                    return {
+                        "model": DECISION_MODEL,
+                        "choice": answers.get("choice"),
+                        "confidence": round(float(answers.get("confidence", 0.0)), 3),
+                        "probabilities": {k: round(float(v), 3) for k, v in answers.get("probabilities", {}).items()},
+                    }
+        except Exception as e:
+            logger.debug("Laya decision call skipped/failed: %s", e)
         return None
 
     def _worker_loop(self) -> None:
@@ -375,6 +470,11 @@ class LayaAIEngine:
         timeframe = job["timeframe"]
         cache_key = f"{symbol.upper()}_{timeframe}"
 
+        # Fast System 1 decision model check via laya if available
+        decision_data = self._call_laya_decision(symbol, stock_data)
+        if decision_data:
+            stock_data["laya_decision"] = decision_data
+
         prompt = self._build_analysis_prompt(symbol, stock_data, timeframe)
         t0 = time.time()
         llm_output = self._call_ollama(prompt, num_predict=240, temperature=0.2, timeout=75.0, num_ctx=2048)
@@ -387,6 +487,8 @@ class LayaAIEngine:
                 result = self._build_analysis_result(symbol, stock_data, timeframe, llm_output, source="local_llm")
                 result["ai_pending"] = False
                 result["is_provisional"] = False
+                if decision_data:
+                    result["laya_decision"] = decision_data
                 with self._lock:
                     self._analysis_cache[cache_key] = {"cached_at": time.time(), "data": result}
                 return
@@ -398,6 +500,8 @@ class LayaAIEngine:
         rules["ai_pending"] = False
         rules["is_provisional"] = False
         rules["validation_failed"] = True if llm_output else False
+        if decision_data:
+            rules["laya_decision"] = decision_data
         if llm_output and not is_valid:
             rules["validation_reason"] = reason
         with self._lock:
@@ -470,7 +574,7 @@ class LayaAIEngine:
         price = stock_data.get("price", 0.0)
         chg = (stock_data.get("change_pct") or 0.0)
         ai_dec = stock_data.get("ai_decision", {})
-        return {
+        res = {
             "symbol": symbol,
             "timeframe": timeframe,
             "price": price,
@@ -496,6 +600,9 @@ class LayaAIEngine:
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "standing_footer": "Technical analysis for information only. Not investment advice.",
         }
+        if "laya_decision" in stock_data:
+            res["laya_decision"] = stock_data["laya_decision"]
+        return res
 
     def _build_rules_briefing(self, symbol: str, stock_data: Dict[str, Any], timeframe: int) -> Dict[str, Any]:
         price = stock_data.get("price", 0.0)

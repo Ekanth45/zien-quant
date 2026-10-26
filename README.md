@@ -98,9 +98,15 @@ python manage.py init-owner --email "owner@example.com" --password "YourStrongPa
 ### Step 4: (Optional) Setup Ollama for Local AI Synthesis
 If you want deep qualitative reasoning alongside deterministic signals:
 1. Install [Ollama](https://ollama.ai).
-2. Pull the recommended quantitative reasoning model:
+2. Pull or build the Laya AI models:
    ```bash
+   # System 1: Ultra-fast 421M parameter trade bias decision model (~200ms)
+   ollama pull laya
+
+   # System 2: Deep qualitative quantitative reasoning assistant
    ollama pull gemma4:12b
+   # Or create the specialized assistant from Modelfile:
+   ollama create laya-ai -f Modelfile
    ```
 3. Ensure the daemon is running on `http://127.0.0.1:11434`.
 

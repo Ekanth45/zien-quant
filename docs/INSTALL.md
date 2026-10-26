@@ -108,18 +108,31 @@ python manage.py init-owner
 Zien Quant features an optional deep analysis engine powered by Ollama.
 
 1. **Install Ollama**: Follow instructions at [https://ollama.ai](https://ollama.ai).
-2. **Download Model**:
-   ```bash
-   ollama pull gemma4:12b
-   ```
+2. **Download Models**:
+   - **Laya Decision Model (System 1)**: Ultra-fast 421M parameter ModernBERT model for trade bias classification (~200ms):
+     ```bash
+     ollama pull laya
+     ```
+   - **Laya Generative Model (System 2)**: Specialized quantitative commentary and Copilot chat:
+     ```bash
+     # Either pull the base model:
+     ollama pull gemma4:12b
+
+     # Or build the specialized Laya AI assistant from the included Modelfile:
+     ollama create laya-ai -f Modelfile
+     ```
 3. **Verify Ollama is Listening**:
    ```bash
+   python manage.py check-ollama
+   # or
    curl http://127.0.0.1:11434/api/tags
    ```
 4. **Configure `.env`**:
    ```env
    OLLAMA_HOST=http://127.0.0.1:11434
    OLLAMA_MODEL=gemma4:12b
+   # Or use the specialized model:
+   # OLLAMA_MODEL=laya-ai
    ```
 
 *Note: If Ollama is offline or uninstalled, Zien Quant gracefully defaults to its 0ms quantitative rules engine without degradation of trade signals.*

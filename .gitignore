@@ -55,6 +55,7 @@ Thumbs.db
 # Archives & Temporary
 *.zip
 *.tar.gz
+*.pdf
 
 # Local Reports & Working Scratches (contain local paths/hashes)
 AUDIT_OUTPUT.md
