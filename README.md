@@ -5,15 +5,15 @@
 ![Architecture](https://img.shields.io/badge/architecture-stdlib%20only-success.svg)
 ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)
 
-**Zien Quant** is a high-performance quantitative trading terminal and order block analysis workstation for Indian cash equities (National Stock Exchange - NSE). Built from the ground up on a **100% Python Standard Library backend** with zero third-party pip dependencies, it delivers deterministic institutional order block detection, canvas-rendered capital flow rivers, automated risk-to-reward gating, and optional local AI trade reasoning powered by Ollama.
+**Zien Quant** is a deterministic quantitative trading terminal and order block analysis workstation for Indian cash equities (National Stock Exchange - NSE). Built from the ground up on a **100% Python Standard Library backend** with zero third-party pip dependencies, it delivers deterministic technical order block detection, canvas-rendered intraday flow rivers, automated risk-to-reward gating, and optional local AI trade reasoning powered by Ollama. Data is sourced from Yahoo Finance chart candles; the terminal is a single-owner administrative system and does not rely on direct exchange feeds, Level 2/3 order flow, or institutional participant tracking.
 
-**Version 0.2.0** introduces a responsive workspace based on the frontend in `finance reff/outputs/marketscope/static/`. The homepage includes the market overview, stock scanner, watchlist, stock inspection, owner console, and Laya assistant. It uses this repository's real-data backend, with auto and previous-session views and explicit unavailable states. The Flow River remains available at `/flow`. See the [frontend version notes](docs/FRONTEND_V2.md).
+**Version 2.0.0** introduces a responsive workspace based on the frontend in `finance reff/outputs/marketscope/static/`. The homepage includes the market overview, stock scanner, watchlist, stock inspection, owner console, and Laya assistant. It uses this repository's real-data backend, with auto and previous-session views and explicit unavailable states. The Flow River remains available at `/flow`. See the [frontend version notes](docs/FRONTEND_V2.md).
 
 ---
 
 ## Visual Tour
 
-| Institutional Flow River Terminal | Pinned Setup & Candlestick Profile |
+| Intraday Flow River Terminal | Pinned Setup & Candlestick Profile |
 |:---:|:---:|
 | ![Desktop Terminal](docs/screenshots/desktop_terminal.png) | ![Flow River Details](docs/screenshots/flow_river_details.png) |
 
@@ -25,14 +25,14 @@
 
 ## Core Capabilities
 
-- **Institutional Flow River**: High-framerate HTML5 Canvas stream visualizing capital distribution and momentum across 75+ intraday candle bars for the liquid NSE universe.
-- **4-Stage Funnel Categorization**: Algorithmic classification into **Accumulation** (base building), **Absorption** (institutional liquidity intake), **Breakout** (range expansion beyond order blocks), and **Retest** (liquidity confirmation).
-- **Setup Cards with Strict R:R Gating**: Real-time trade opportunities with mathematical validation. Setups require a mandatory **Risk:Reward ratio $\ge 1.5$** anchored to verified swing pivots; invalid or low-expectancy structures are automatically discarded.
+- **Intraday Flow River**: High-framerate HTML5 Canvas stream visualizing price and volume momentum across 75+ intraday candle bars for the liquid NSE universe.
+- **4-Stage Funnel Categorization**: Algorithmic classification into **Movers** ($|\Delta\%| \ge 1.0\%$), **Volume** ($RVOL \ge 1.2$), **Pressure** (score $\ge 60$ / $\le 40$), and **Setups** ($R:R \ge 1.5$).
+- **Setup Cards with Strict R:R Gating**: Intraday trade opportunities with mathematical validation. Setups require a mandatory **Risk:Reward ratio $\ge 1.5$** anchored to verified swing pivots; invalid or low-expectancy structures are automatically discarded.
 - **Zero Synthetic Data Guarantee**: No fake candles, synthetic price randomizers, or invented levels. Missing or off-market data is honestly reflected via dedicated session states.
-- **Previous Session Playback Engine**: Automatically computes and replays real persisted exchange data from the most recent completed market session when the exchange is closed or upstream feeds are down, with built-in holiday awareness.
-- **Laya AI Institutional Commentary**: Optional local intelligence integration with Ollama (`gemma4:12b`). Features strict regex validation against price hallucinations and a 0ms deterministic rules engine fallback.
+- **Previous Session Playback Engine**: Automatically computes and replays real persisted Yahoo Finance candle data from the most recent completed market session when the exchange is closed or upstream feeds are down, with built-in holiday awareness.
+- **Laya AI Commentary**: Optional local intelligence integration with Ollama (`gemma4:12b`). Features strict regex numerical bounds validation against price discrepancies and a deterministic rules engine fallback.
 - **Resilient Upstream Scraper**: Multi-tiered fetcher with exponential backoff, randomized jitter, and an automatic circuit breaker tripping after consecutive upstream errors.
-- **Hardened Security**: Multi-factor authentication (TOTP), PBKDF2 HMAC-SHA256 password hashing, anti-CSRF token verification, session tracking, and sliding-window rate limiters.
+- **Hardened Single-Owner Security**: Multi-factor authentication (TOTP), PBKDF2 HMAC-SHA256 password hashing, anti-CSRF token verification, session tracking, and sliding-window rate limiters.
 
 ---
 
@@ -122,34 +122,34 @@ python manage.py doctor
 ## Terminal User Guide
 
 ### 1. The Flow River Visualization
-The top panel renders the **Flow River**, an animated institutional capital flow display.
+The top panel renders the **Flow River**, an animated intraday price & volume flow display.
 - **Horizontal Axis**: 75 rolling 5-minute candles across the trading day (09:15 to 15:30 IST).
 - **Vertical Spread**: Percentage deviation from session open (-3% to +3%).
-- **Color Coding**: Institutional green streams denote bullish momentum; magenta/amber streams denote institutional absorption and distribution.
-- **Interactive Tooltips**: Hover over any stock stream to inspect real-time RSI, Relative Volume (RVOL), VWAP distance, and composite score. Click to pin the inspector card.
+- **Color Coding**: Emerald green streams denote bullish momentum; magenta/amber streams denote bearish pressure or consolidation.
+- **Interactive Tooltips**: Hover over any stock stream to inspect current RSI, Relative Volume (RVOL), VWAP distance, and composite score. Click to pin the inspector card.
 
 ### 2. The 4 Funnel Stages
 All tracked equities pass through a continuous mathematical pipeline:
-1. **Accumulation**: Tight volatility compression, volume dry-up, institutional base formation.
-2. **Absorption**: High relative volume ($RVOL \ge 1.3$) with minimal price slippage, indicating institutional block positioning.
-3. **Breakout**: Directional impulse breaking swing structure with volume expansion.
-4. **Retest**: Low-volume retest of newly established order block zone, providing optimal entry.
+1. **Movers**: Intraday price change threshold filter ($|\Delta\%| \ge 1.0\%$).
+2. **Volume**: Relative Volume expansion ($RVOL \ge 1.2$).
+3. **Pressure**: Directional algorithmic composite score ($\ge 60$ for bullish, $\le 40$ for bearish).
+4. **Setups**: Technical setup qualification requiring execution grade (A+, A, B) and risk-to-reward ratio gating ($R:R \ge 1.5$).
 
 ### 3. Setup Cards & R:R Gating
 Actionable trade setups are rendered as cards in the lower console:
 - **Mandatory R:R Gate**: Every trade setup requires a minimum calculated Risk:Reward ratio of **1.5**.
-- **Stop Loss & Target Calculation**: Stops are anchored beyond order block invalidation thresholds; targets are set at opposing liquidity pools. Setups failing the R:R threshold or missing verified candle levels are suppressed.
+- **Stop Loss & Target Calculation**: Stops are anchored beyond technical order block invalidation thresholds; targets are set at opposing liquidity boundaries. Setups failing the R:R threshold or missing verified candle levels are suppressed.
 - **Conviction Score**: Ranked 0 to 100 based on multi-timeframe trend alignment, VWAP positioning, and volume confirmation.
 
 ### 4. Session States & Honest Transparency
-- **`LIVE` (Green Badge)**: Market is open (Monday–Friday, 09:15–15:30 IST), and live exchange candles are streaming.
+- **`LIVE` (Green Badge)**: Market is open (Monday–Friday, 09:15–15:30 IST), and live Yahoo Finance chart candles are streaming.
 - **`CLOSED` (Slate Badge)**: Market is closed (weekends, evenings, or NSE official holidays). The terminal displays the **Previous Session view**, reconstructing the entire terminal from real, verified historical candles of the last completed session.
 - **`FEED_DOWN` (Amber Badge)**: Upstream feed outage detected. The terminal alerts the user immediately and switches to the last verified snapshot without fabricating fallback data.
 
-### 5. Laya AI Commentary & Hallucination Defense
+### 5. Laya AI Commentary & Numerical Validator
 - When Ollama is active, the terminal badge displays **`AI - gemma4:12b`**.
 - When Ollama is offline or processing, the badge displays **`Rules engine`**.
-- Every AI output is verified by a multi-layered post-generation validator that verifies reported price levels against actual market data within 0.2%, disallowing invented targets, stops, or percentages.
+- Every AI output is verified by a strict numerical consistency validator that verifies reported price levels against actual input data within 0.2%, disallowing invented targets, stops, or percentages. Note that the validator checks numerical consistency only; it does not verify conceptual statements.
 
 ---
 
@@ -157,7 +157,7 @@ Actionable trade setups are rendered as cards in the lower console:
 
 ```
                                   +-----------------------+
-                                  |   NSE Exchange Feed   |
+                                  | Yahoo Finance Feed    |
                                   +-----------+-----------+
                                               |
                                               v
@@ -224,9 +224,16 @@ python manage.py candle-stats
 
 ---
 
+## Deployment
+
+### Docker Deployment (Untested)
+Reference deployment manifests are provided under `marketscope/deploy/` (`Dockerfile`, `docker-compose.yml`, `Caddyfile`). Because Docker was not present in the local verification environment, these manifests are currently **untested** and provided as community deployment templates.
+
+---
+
 ## Testing
 
-Run the full automated test suite (133 tests) directly with Python's built-in test runner:
+Run the full automated test suite (139 tests) directly with Python's built-in test runner:
 
 ```bash
 python -m unittest discover -s tests

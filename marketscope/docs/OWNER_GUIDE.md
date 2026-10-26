@@ -10,7 +10,7 @@ Open `http://127.0.0.1:8765` in your browser.
 ## 2. Initializing the Owner Account
 The application supports a single protected owner account with mandatory TOTP two-factor authentication:
 ```sh
-python marketscope/manage.py init-owner
+python manage.py init-owner
 ```
 Follow the interactive prompt to set:
 - Owner email
@@ -20,20 +20,11 @@ Follow the interactive prompt to set:
 ## 3. Database Status & Backups
 ```sh
 # Check database status
-python marketscope/manage.py status
+python manage.py status
 
 # Create an ACID-compliant SQLite online backup
-python marketscope/manage.py backup
+python manage.py backup
 ```
 
-## 4. Connecting Live Zerodha Kite Feed (Optional)
-1. Install live dependencies:
-   ```sh
-   pip install -r marketscope/requirements-live.txt
-   ```
-2. Configure credentials in `.env`:
-   ```env
-   KITE_API_KEY=your_api_key
-   KITE_ACCESS_TOKEN=your_access_token
-   ```
-3. Restart server and log in as owner.
+## 4. Upstream Market Data Source
+By default, Zien Quant uses Yahoo Finance delayed chart candles with built-in SQLite caching and previous session replay. Zero external pip packages are needed for default operation. (Zerodha Kite Connect is a future integration placeholder; leave `KITE_*` empty in `.env`).

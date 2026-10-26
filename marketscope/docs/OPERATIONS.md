@@ -8,9 +8,9 @@
 - Content Security Policy (CSP), Strict-Origin-When-Cross-Origin, nosniff, and frame-busting headers.
 
 ## Running Tests
-Run the 50-test unit verification suite:
+Run the comprehensive automated test suite (139 tests across root and marketscope suites):
 ```sh
-python -m unittest discover -s marketscope/tests -v
+python -m unittest discover -s tests -v
 ```
 
 ## Production Docker Deployment
@@ -18,4 +18,4 @@ python -m unittest discover -s marketscope/tests -v
 cd marketscope/deploy
 docker compose up -d --build
 ```
-Caddy handles automated HTTPS TLS termination on ports 80/443.
+Caddy handles automated HTTPS TLS termination on ports 80/443 (ensure your domain and email are updated in `Caddyfile`). Note: Docker deployment is provided as a reference configuration and should be tested locally in environments with Docker installed.

@@ -134,7 +134,7 @@ Requests deep quantitative and structural analysis for a specific symbol.
   "model": "gemma4:12b",
   "signal_type": "BUY",
   "score": 78.5,
-  "commentary": "Institutional absorption confirmed above 2830 level. Breakout expansion targeting 2910 resistance with 2.11 R:R ratio.",
+  "commentary": "Volume expansion confirmed above 2830 level. Technical breakout targeting 2910 resistance with 2.11 R:R ratio.",
   "validated": true,
   "latency_ms": 420.5
 }

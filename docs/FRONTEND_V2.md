@@ -1,4 +1,4 @@
-# Zien Quant frontend 0.2.0
+# Zien Quant frontend 2.0.0
 
 Released 26 October 2026.
 
@@ -28,7 +28,7 @@ Open `http://127.0.0.1:8765/`. No frontend bundler or additional runtime depende
 
 The new frontend uses `marketscope/static/workspace.html`, `workspace.css`, `workspace.js`, and `workspace-api.js`. The API adapter maps the existing market, stock, session, catalogue, authentication, and analysis responses to the workspace. Existing API routes and data processing stay in place.
 
-The reference folder also contains an older application's demo and provider modes. Version 0.2.0 uses its frontend design with the current repository's real-data service. Auto session and previous session controls use received exchange observations or persisted real candles. Missing prices, invalid candles, and unavailable feeds remain unavailable; the workspace does not fabricate candles or replace a failed real feed with the reference application's generated replay.
+The reference folder also contains an older application's demo and provider modes. Version 2.0.0 uses its frontend design with the current repository's real-data service. Auto session and previous session controls use received exchange observations or persisted real candles. Missing prices, invalid candles, and unavailable feeds remain unavailable; the workspace does not fabricate candles or replace a failed real feed with the reference application's generated replay.
 
 The interface exposes owner actions through the existing authentication and authorization endpoints. Running the new frontend does not create an owner account or change the server's security configuration. Follow the existing installation guide to initialize the owner account.
 
