@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>Order Flow Terminal &amp; Buildup Analyzer</title>
+<!-- Cyber Terminal Native Production Stylesheet -->
+<link rel="stylesheet" href="/static/cyber_terminal.css"/>
+
+<!-- Tailwind CSS CDN -->
+<script src="/static/tailwind.min.js"></script>
+<!-- Phosphor Icons CDN -->
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css" rel="stylesheet"/>
+<!-- Google Fonts: JetBrains Mono & Space Grotesk -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            terminal: {
+              black: '#05070a',
+              card: '#0a0d14',
+              surface: '#0f1420',
+              border: '#1b2438'
+            },
+            bull: {
+              DEFAULT: '#00ff88',
+              glow: 'rgba(0, 255, 136, 0.28)',
+              subtle: 'rgba(0, 255, 136, 0.08)',
+              dark: '#034426'
+            },
+            bear: {
+              DEFAULT: '#ff2d55',
+              glow: 'rgba(255, 45, 85, 0.28)',
+              subtle: 'rgba(255, 45, 85, 0.08)',
+              dark: '#4c0c19'
+            },
+            cyber: {
+              cyan: '#00e5ff',
+              gold: '#ffb703'
+            }
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+            sans: ['"Space Grotesk"', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+<!-- Custom Core Terminal Styles -->
+<style data-purpose="cyberpunk-theme">
+    body {
+      background-color: #05070a;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      touch-action: pan-y;
+    }
+
+    /* Subtle CRT scanline overlay */
+    .scanlines {
+      background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0, 0, 0, 0.25) 51%,
+        rgba(0, 0, 0, 0.25)
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+
+    .glow-bull {
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.25);
+    }
+    
+    .glow-bear {
+      box-shadow: 0 0 15px rgba(255, 45, 85, 0.25);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 2px;
+    }
+  </style>
+<style>body{padding-top:26px !important;}</style></head>
+<body class="relative min-h-screen bg-terminal-black text-slate-200 select-none pb-24">
+<div style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#b45309;color:#fff;text-align:center;font:600 12px/1.4 monospace;padding:6px 10px;letter-spacing:0.06em;">STATIC SAMPLE DATA &mdash; DESIGN PREVIEW ONLY &mdash; NOT CONNECTED TO LIVE MARKET DATA</div>
+
+<!-- Background Scanline Effect -->
+<div class="fixed inset-0 scanlines z-40 opacity-40 pointer-events-none"></div>
+<!-- BEGIN: iOSStatusBar -->
+<!-- Mimics mobile header safe area spacing -->
+<div class="w-full pt-2 px-5 pb-1 flex justify-between items-center text-[11px] font-semibold text-slate-400">
+<span>09:41</span>
+<div class="flex items-center gap-1.5 text-xs">
+<i class="ph-bold ph-cell-signal-full"></i>
+<i class="ph-bold ph-wifi-high"></i>
+<i class="ph-bold ph-battery-charging text-bull"></i>
+</div>
+</div>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: MainHeader -->
+<header class="px-4 py-2 border-b border-terminal-border/80 sticky top-0 bg-terminal-black/95 backdrop-blur-md z-30">
+<div class="flex items-center justify-between">
+<!-- Market Dropdown & Time -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 bg-terminal-surface border border-bull/40 px-2.5 py-1.5 rounded text-xs font-bold text-bull tracking-wide shadow-[0_0_8px_rgba(0,255,136,0.15)]">
+<span class="w-2 h-2 rounded-full bg-bull animate-ping"></span>
+<span>NIFTY 50</span>
+<i class="ph-bold ph-caret-down text-[10px]"></i>
+</button>
+<span class="text-[11px] text-slate-400">24,478.20</span>
+<span class="text-[10px] text-bull font-bold bg-bull-subtle px-1 rounded">+142.35 (+0.58%)</span>
+</div>
+<!-- Live Stream Indicator & Alerts -->
+<div class="flex items-center gap-2">
+<span class="text-[10px] bg-red-950/60 text-red-400 border border-red-800/60 px-1.5 py-0.5 rounded font-mono font-medium">LIVE 15:15:30</span>
+<button class="relative p-1.5 rounded bg-terminal-surface border border-terminal-border text-slate-300">
+<i class="ph-bold ph-bell-simple text-sm"></i>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-cyber-cyan rounded-full"></span>
+</button>
+</div>
+</div>
+<!-- Sentiment Meter Bar -->
+<div class="mt-2.5 flex items-center justify-between text-[11px] font-mono mb-1">
+<span class="text-bull flex items-center gap-1 font-bold">
+<i class="ph-bold ph-trend-up"></i> BULLISH 68%
+      </span>
+<span class="text-[10px] text-slate-400 uppercase tracking-widest">Aggregate Order Flow</span>
+<span class="text-bear flex items-center gap-1 font-bold">
+        32% BEARISH <i class="ph-bold ph-trend-down"></i>
+</span>
+</div>
+<div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden flex p-0.5 border border-terminal-border">
+<div class="h-full bg-bull rounded-full shadow-[0_0_8px_#00ff88]" style="width: 68%"></div>
+<div class="h-full bg-bear rounded-full shadow-[0_0_8px_#ff2d55]" style="width: 32%"></div>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MainContent -->
+<main class="px-3 pt-3 space-y-3.5">
+<!-- BEGIN: OrderBlockTerminalCard -->
+<!-- Interactive Canvas & Chart Visualizing Order Flow, Lines, Depth & Terminal Tooltip Overlay -->
+<section class="relative rounded-lg border border-terminal-border bg-terminal-card p-3 shadow-2xl overflow-hidden" data-purpose="terminal-visualizer">
+<!-- Glow Gradients -->
+<div class="absolute -top-16 -left-16 w-36 h-36 bg-bull/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-16 -right-16 w-36 h-36 bg-bear/10 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Card Top Bar -->
+<div class="flex justify-between items-center text-xs pb-2 border-b border-terminal-border/50">
+<div class="flex items-center gap-1.5">
+<i class="ph-bold ph-cpu text-cyber-cyan text-sm"></i>
+<h2 class="text-xs uppercase tracking-wider text-slate-200 font-bold">Order Flow / Delta Terminal</h2>
+</div>
+<div class="flex items-center gap-1 text-[10px] text-slate-400">
+<span class="px-1.5 py-0.5 bg-terminal-surface border border-slate-700 rounded text-slate-300">1M</span>
+<span class="px-1.5 py-0.5 bg-bull/20 border border-bull/60 rounded text-bull font-bold">5M</span>
+<span class="px-1.5 py-0.5 bg-terminal-surface border border-slate-700 rounded text-slate-300">15M</span>
+</div>
+</div>
+<!-- Micro Metrics Row -->
+<div class="grid grid-cols-4 gap-1.5 my-2.5 py-1.5 px-2 bg-terminal-surface/90 rounded border border-terminal-border/80 text-[10px]">
+<div>
+<span class="text-slate-500 block">VWAP</span>
+<span class="text-cyber-cyan font-bold">24,420.40</span>
+</div>
+<div>
+<span class="text-slate-500 block">DELTA</span>
+<span class="text-bull font-bold">+18.4K</span>
+</div>
+<div>
+<span class="text-slate-500 block">GATE OI</span>
+<span class="text-cyber-gold font-bold">5,005.77</span>
+</div>
+<div>
+<span class="text-slate-500 block">STATUS</span>
+<span class="text-bull font-bold flex items-center gap-0.5">
+<span class="w-1.5 h-1.5 bg-bull rounded-full animate-pulse"></span>
+            ACTIVE
+          </span>
+</div>
+</div>
+<!-- Dynamic Canvas Orderflow Chart -->
+<div class="relative w-full h-52 bg-terminal-black/80 rounded border border-terminal-border/70 overflow-hidden">
+<!-- Visual Grid Overlay -->
+<div class="absolute inset-0 bg-[linear-gradient(to_right,#1b243820_1px,transparent_1px),linear-gradient(to_bottom,#1b243820_1px,transparent_1px)] bg-[size:16px_16px]"></div>
+<!-- Live HTML5 Canvas Chart -->
+<canvas class="w-full h-full block relative z-10" id="orderFlowChart"></canvas>
+<!-- Dynamic Holographic Tooltip (From Reference 2) -->
+<div class="absolute top-5 left-1/2 -translate-x-1/2 z-20 w-[84%] bg-[#08111bbd] backdrop-blur-md border border-bull/50 rounded-md p-2.5 shadow-[0_0_20px_rgba(0,255,136,0.2)]">
+<div class="flex items-center justify-between pb-1.5 border-b border-terminal-border">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 bg-bull rounded-sm shadow-[0_0_6px_#00ff88]"></span>
+<span class="text-xs font-bold text-white tracking-wide">ORDER BLOCK TERMINAL</span>
+</div>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-bull/20 text-bull font-bold">L-ZONE</span>
+</div>
+<div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-2 text-[10px]">
+<div class="flex justify-between"><span class="text-slate-400">RANK:</span><span class="text-white font-mono font-bold">#1 HIGH OI</span></div>
+<div class="flex justify-between"><span class="text-slate-400">OI SPIKE:</span><span class="text-bull font-mono font-bold">+287.39%</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Δ DELTA:</span><span class="text-bull font-mono font-bold">+5,128.56</span></div>
+<div class="flex justify-between"><span class="text-slate-400">GATE ACCUM:</span><span class="text-cyber-cyan font-mono font-bold">BULL REVERSAL</span></div>
+</div>
+<!-- Premium Unlock Banner (From Reference 2) -->
+<div class="mt-2 pt-1.5 border-t border-terminal-border/80 flex items-center justify-between text-[10px]">
+<span class="text-slate-400 flex items-center gap-1">
+<i class="ph-bold ph-lock-key text-cyber-gold"></i> ACCESS VERIFIED
+            </span>
+<span class="text-cyber-cyan font-bold flex items-center gap-0.5">
+              T-0 Algo Stream <i class="ph-bold ph-arrow-right text-[9px]"></i>
+</span>
+</div>
+</div>
+<!-- Scale Tags -->
+<div class="absolute left-1 bottom-1 z-10 text-[8px] text-slate-500 font-mono">09:15</div>
+<div class="absolute right-1 bottom-1 z-10 text-[8px] text-slate-500 font-mono">15:30</div>
+<div class="absolute left-1 top-1 z-10 text-[8px] text-bull font-mono">+1.85k OI</div>
+<div class="absolute left-1 bottom-6 z-10 text-[8px] text-bear font-mono">-1.20k OI</div>
+</div>
+</section>
+<!-- END: OrderBlockTerminalCard -->
+<!-- BEGIN: LongBuildUpSection -->
+<!-- Green Cyberpunk cards representing long positions and accumulation -->
+<section class="space-y-2" data-purpose="long-buildup-container">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-sm bg-bull shadow-[0_0_8px_#00ff88]"></span>
+<h3 class="text-xs font-bold text-bull uppercase tracking-wider">Long Build-Up Clusters</h3>
+</div>
+<span class="text-[10px] text-slate-400 font-mono">6 ACTIVE STRIKES</span>
+</div>
+<!-- Long Card 1 (Detailed Primary Card) -->
+<div class="rounded-lg border border-bull/40 bg-gradient-to-br from-[#021f14] via-terminal-card to-terminal-surface p-3 shadow-[0_2px_12px_rgba(0,255,136,0.08)] relative overflow-hidden">
+<div class="absolute right-0 top-0 w-24 h-24 bg-bull/5 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-bull text-terminal-black font-extrabold text-[11px] rounded tracking-wider">BULL</span>
+<span class="text-xs font-bold text-white">24,500 CE</span>
+<span class="text-[10px] text-bull font-mono bg-bull/15 px-1.5 py-0.2 rounded border border-bull/30">LONG BUILD-UP</span>
+</div>
+<div class="text-[11px] text-slate-300 mt-1 font-mono">
+              LTP: <span class="text-white font-bold">186.40</span> <span class="text-bull font-bold">(+38.2%)</span>
+</div>
+</div>
+<!-- Micro Sparkline SVG -->
+<div class="w-16 h-8">
+<svg class="w-full h-full" fill="none" viewbox="0 0 70 30">
+<path d="M2 26 L12 24 L22 18 L32 20 L42 12 L52 14 L62 4 L68 2" stroke="#00ff88" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+<path d="M2 26 L12 24 L22 18 L32 20 L42 12 L52 14 L62 4 L68 2 V 30 H 2 Z" fill="url(#bull-gradient)" opacity="0.3"></path>
+<defs>
+<lineargradient id="bull-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#00ff88"></stop>
+<stop offset="100%" stop-color="#00ff88" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-4 gap-2 mt-2.5 pt-2 border-t border-bull/20 text-[10px]">
+<div>
+<span class="text-slate-400 block">OI VALUE</span>
+<span class="text-white font-bold font-mono">5,005.77</span>
+</div>
+<div>
+<span class="text-slate-400 block">Δ ACCUM</span>
+<span class="text-bull font-bold font-mono">+865.93</span>
+</div>
+<div>
+<span class="text-slate-400 block">VWAP</span>
+<span class="text-cyber-cyan font-bold font-mono">164.20</span>
+</div>
+<div>
+<span class="text-slate-400 block">R:R RATIO</span>
+<span class="text-cyber-gold font-bold font-mono">1 : 3.8</span>
+</div>
+</div>
+<!-- Support Zone Bar -->
+<div class="mt-2 pt-1.5 flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>ZONE: S1 <strong class="text-slate-200">24,420</strong></span>
+<div class="w-24 h-1 bg-slate-800 rounded-full mx-2 overflow-hidden flex">
+<div class="w-3/4 bg-bull rounded-full"></div>
+</div>
+<span>R1 <strong class="text-slate-200">24,580</strong></span>
+</div>
+</div>
+<!-- Long Card 2 (Compact Cluster Card) -->
+<div class="rounded-lg border border-bull/30 bg-terminal-card p-2.5 flex items-center justify-between text-xs hover:border-bull/60 transition">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded bg-bull/10 border border-bull/30 flex items-center justify-center text-bull font-bold text-[10px]">
+            OI+
+          </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-white text-[11px]">24,400 PE</span>
+<span class="text-[9px] text-bull bg-bull/10 px-1 rounded">SHORT COVERING</span>
+</div>
+<div class="text-[10px] text-slate-400 font-mono">Δ OI: <span class="text-bull font-bold">+2,072.98</span> • VOL: <span class="text-slate-300">1.82M</span></div>
+</div>
+</div>
+<div class="text-right font-mono">
+<div class="text-white font-bold text-[11px]">₹ 142.10</div>
+<div class="text-[9px] text-bull font-semibold">+18.45%</div>
+</div>
+</div>
+</section>
+<!-- END: LongBuildUpSection -->
+<!-- BEGIN: ShortBuildUpSection -->
+<!-- Red Cyberpunk cards representing short accumulation and bear pressure -->
+<section class="space-y-2" data-purpose="short-buildup-container">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-sm bg-bear shadow-[0_0_8px_#ff2d55]"></span>
+<h3 class="text-xs font-bold text-bear uppercase tracking-wider">Short Build-Up Clusters</h3>
+</div>
+<span class="text-[10px] text-slate-400 font-mono">5 ACTIVE STRIKES</span>
+</div>
+<!-- Bear Card 1 (Detailed Bearish Cluster) -->
+<div class="rounded-lg border border-bear/40 bg-gradient-to-br from-[#24040a] via-terminal-card to-terminal-surface p-3 shadow-[0_2px_12px_rgba(255,45,85,0.08)] relative overflow-hidden">
+<div class="absolute right-0 top-0 w-24 h-24 bg-bear/5 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-bear text-white font-extrabold text-[11px] rounded tracking-wider">BEAR</span>
+<span class="text-xs font-bold text-white">24,650 CE</span>
+<span class="text-[10px] text-bear font-mono bg-bear/15 px-1.5 py-0.2 rounded border border-bear/30">SHORT BUILD-UP</span>
+</div>
+<div class="text-[11px] text-slate-300 mt-1 font-mono">
+              LTP: <span class="text-white font-bold">57.63</span> <span class="text-bear font-bold">(-28.4%)</span>
+</div>
+</div>
+<!-- Micro Sparkline SVG (Falling) -->
+<div class="w-16 h-8">
+<svg class="w-full h-full" fill="none" viewbox="0 0 70 30">
+<path d="M2 4 L14 8 L24 6 L34 16 L44 14 L54 22 L64 24 L68 28" stroke="#ff2d55" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+<path d="M2 4 L14 8 L24 6 L34 16 L44 14 L54 22 L64 24 L68 28 V 30 H 2 Z" fill="url(#bear-gradient)" opacity="0.3"></path>
+<defs>
+<lineargradient id="bear-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#ff2d55"></stop>
+<stop offset="100%" stop-color="#ff2d55" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-4 gap-2 mt-2.5 pt-2 border-t border-bear/20 text-[10px]">
+<div>
+<span class="text-slate-400 block">OI ADD</span>
+<span class="text-white font-bold font-mono">4,655.33</span>
+</div>
+<div>
+<span class="text-slate-400 block">Δ SHORT</span>
+<span class="text-bear font-bold font-mono">+5,128.56</span>
+</div>
+<div>
+<span class="text-slate-400 block">VWAP</span>
+<span class="text-cyber-cyan font-bold font-mono">72.45</span>
+</div>
+<div>
+<span class="text-slate-400 block">RISK</span>
+<span class="text-cyber-gold font-bold font-mono">LOW / HIGH R</span>
+</div>
+</div>
+<!-- Zone Range Bar -->
+<div class="mt-2 pt-1.5 flex items-center justify-between text-[9px] text-slate-400 font-mono">
+<span>ZONE: R1 <strong class="text-slate-200">24,620</strong></span>
+<div class="w-24 h-1 bg-slate-800 rounded-full mx-2 overflow-hidden flex">
+<div class="w-2/3 bg-bear rounded-full"></div>
+</div>
+<span>S2 <strong class="text-slate-200">24,350</strong></span>
+</div>
+</div>
+<!-- Bear Card 2 (Compact Cluster Card) -->
+<div class="rounded-lg border border-bear/30 bg-terminal-card p-2.5 flex items-center justify-between text-xs hover:border-bear/60 transition">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded bg-bear/10 border border-bear/30 flex items-center justify-center text-bear font-bold text-[10px]">
+            OI+
+          </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-white text-[11px]">24,700 CE</span>
+<span class="text-[9px] text-bear bg-bear/10 px-1 rounded">MASSIVE WRITING</span>
+</div>
+<div class="text-[10px] text-slate-400 font-mono">Δ OI: <span class="text-bear font-bold">+3,319.30</span> • VOL: <span class="text-slate-300">3.4M</span></div>
+</div>
+</div>
+<div class="text-right font-mono">
+<div class="text-white font-bold text-[11px]">₹ 41.25</div>
+<div class="text-[9px] text-bear font-semibold">-34.12%</div>
+</div>
+</div>
+</section>
+<!-- END: ShortBuildUpSection -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: BottomNavigation -->
+<!-- Floating high-tech iOS tab bar navigation -->
+<nav class="fixed bottom-0 inset-x-0 bg-terminal-card/95 backdrop-blur-lg border-t border-terminal-border/80 px-3 py-2 z-50">
+<div class="max-w-md mx-auto flex justify-between items-center text-center">
+<!-- Tab 1: Terminal (Active) -->
+<button class="flex flex-col items-center gap-1 text-bull px-2 py-1 relative">
+<i class="ph-bold ph-chart-polar text-xl"></i>
+<span class="text-[9px] font-bold tracking-wider uppercase">Terminal</span>
+<span class="w-1.5 h-1.5 bg-bull rounded-full absolute -bottom-0.5"></span>
+</button>
+<!-- Tab 2: Order Flow -->
+<button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 px-2 py-1">
+<i class="ph-bold ph-git-merge text-xl"></i>
+<span class="text-[9px] font-medium tracking-wider uppercase">Orderflow</span>
+</button>
+<!-- Tab 3: Heatmap -->
+<button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 px-2 py-1">
+<i class="ph-bold ph-squares-four text-xl"></i>
+<span class="text-[9px] font-medium tracking-wider uppercase">Heatmap</span>
+</button>
+<!-- Tab 4: Signals -->
+<button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 px-2 py-1 relative">
+<i class="ph-bold ph-lightning text-xl"></i>
+<span class="text-[9px] font-medium tracking-wider uppercase">Signals</span>
+<span class="w-2 h-2 rounded-full bg-cyber-cyan absolute top-1 right-2"></span>
+</button>
+<!-- Tab 5: Watchlist -->
+<button class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 px-2 py-1">
+<i class="ph-bold ph-list-dashes text-xl"></i>
+<span class="text-[9px] font-medium tracking-wider uppercase">Watchlist</span>
+</button>
+</div>
+</nav>
+<!-- END: BottomNavigation -->
+<!-- JavaScript: Canvas Drawing for Glowing Order Flow Chart Curves -->
+<script data-purpose="canvas-setup">
+    document.addEventListener("DOMContentLoaded", () => {
+      const canvas = document.getElementById("orderFlowChart");
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      let dpr = window.devicePixelRatio || 1;
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        draw();
+      }
+
+      function draw() {
+        const w = canvas.getBoundingClientRect().width;
+        const h = canvas.getBoundingClientRect().height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Center line
+        const midY = h * 0.52;
+        ctx.strokeStyle = "rgba(51, 65, 85, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, midY);
+        ctx.lineTo(w, midY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Multi-stream green lines (accumulation network)
+        const greenCurves = [
+          [ {x:0, y:midY}, {x:w*0.2, y:midY - 15}, {x:w*0.4, y:midY - 45}, {x:w*0.7, y:midY - 70}, {x:w, y:midY - 80} ],
+          [ {x:0, y:midY}, {x:w*0.25, y:midY - 25}, {x:w*0.5, y:midY - 55}, {x:w*0.75, y:midY - 50}, {x:w, y:midY - 60} ],
+          [ {x:0, y:midY}, {x:w*0.3, y:midY - 10}, {x:w*0.6, y:midY - 30}, {x:w*0.85, y:midY - 40}, {x:w, y:midY - 35} ]
+        ];
+
+        greenCurves.forEach((pts, idx) => {
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1];
+            const curr = pts[i];
+            const cx = (prev.x + curr.x) / 2;
+            const cy = (prev.y + curr.y) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y, cx, cy);
+          }
+          ctx.strokeStyle = `rgba(0, 255, 136, ${0.25 + idx * 0.25})`;
+          ctx.lineWidth = 1 + idx * 0.8;
+          ctx.shadowColor = "#00ff88";
+          ctx.shadowBlur = 8;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        });
+
+        // Multi-stream red lines (distribution network)
+        const redCurves = [
+          [ {x:0, y:midY}, {x:w*0.2, y:midY + 15}, {x:w*0.4, y:midY + 40}, {x:w*0.7, y:midY + 65}, {x:w, y:midY + 75} ],
+          [ {x:0, y:midY}, {x:w*0.25, y:midY + 25}, {x:w*0.5, y:midY + 45}, {x:w*0.75, y:midY + 40}, {x:w, y:midY + 50} ],
+          [ {x:0, y:midY}, {x:w*0.3, y:midY + 8}, {x:w*0.6, y:midY + 25}, {x:w*0.85, y:midY + 30}, {x:w, y:midY + 28} ]
+        ];
+
+        redCurves.forEach((pts, idx) => {
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1];
+            const curr = pts[i];
+            const cx = (prev.x + curr.x) / 2;
+            const cy = (prev.y + curr.y) / 2;
+            ctx.quadraticCurveTo(prev.x, prev.y, cx, cy);
+          }
+          ctx.strokeStyle = `rgba(255, 45, 85, ${0.25 + idx * 0.25})`;
+          ctx.lineWidth = 1 + idx * 0.8;
+          ctx.shadowColor = "#ff2d55";
+          ctx.shadowBlur = 8;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        });
+
+        // Highlight Active Order Block Curve (Solid Bright Green)
+        ctx.beginPath();
+        ctx.moveTo(0, midY);
+        ctx.bezierCurveTo(w * 0.25, midY - 60, w * 0.5, midY - 20, w * 0.75, midY - 80);
+        ctx.lineTo(w, midY - 75);
+        ctx.strokeStyle = "#00ff88";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#00ff88";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Current Crosshair Position
+        const targetX = w * 0.58;
+        ctx.strokeStyle = "rgba(0, 229, 255, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(targetX, 0);
+        ctx.lineTo(targetX, h);
+        ctx.stroke();
+
+        // Pulsing Point on Curve
+        ctx.beginPath();
+        ctx.arc(targetX, midY - 45, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#00e5ff";
+        ctx.shadowColor = "#00e5ff";
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+    });
+  </script>
+</body></html>
