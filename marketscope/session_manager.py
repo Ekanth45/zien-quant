@@ -228,6 +228,7 @@ def build_session_snapshot(
 
     for sym in symbols:
         meta = STOCK_CATALOGUE[sym]
+        yahoo_prev_close = None
         # Query candles.db
         candles = archive.get_candles_for_session(sym, timeframe, session_date)
 
@@ -237,6 +238,7 @@ def build_session_snapshot(
             try:
                 res = scraper.scrape_stock_candles(sym, timeframe=timeframe)
                 all_candles = res.get("candles", [])
+                yahoo_prev_close = res.get("previous_close")
                 candles = [
                     c for c in all_candles
                     if datetime.fromtimestamp(c["t"], IST).strftime("%Y-%m-%d") == session_date
@@ -252,9 +254,25 @@ def build_session_snapshot(
             continue
 
         open_price = float(candles[0]["o"])
-        # Check prior session close from archive
+        # Check prior session close from archive, then Yahoo's real previous close
         first_candle_ts = candles[0].get("t") or candles[0].get("ts", 0)
         prior_close = archive.get_prior_session_close(sym, timeframe, first_candle_ts)
+        if prior_close is None and yahoo_prev_close:
+            try:
+                prior_close = float(yahoo_prev_close)
+            except (TypeError, ValueError):
+                prior_close = None
+        if prior_close is None and yahoo_prev_close is None:
+            # Candles came from the local archive, so Yahoo's previous close was
+            # not fetched in this build. Fetch it now (via the shared cached feed)
+            # so the day change stays based on the real previous close.
+            try:
+                res_prev = scraper.scrape_stock_candles(sym, timeframe=timeframe)
+                yp = res_prev.get("previous_close")
+                if yp is not None:
+                    prior_close = float(yp)
+            except Exception as e:
+                logger.debug("Failed to fetch previous close for %s: %s", sym, e)
         
         # Flag overnight gaps > 15% as possible corporate actions (exclude that symbol-day)
         if prior_close is not None and prior_close > 0:
@@ -276,8 +294,15 @@ def build_session_snapshot(
         volumes = [int(c.get("v", 0)) for c in candles]
 
         close_price = closes[-1]
-        prev_close = prior_close if prior_close is not None else (meta.get("base_price") or open_price)
-        change_pct = round(((close_price - prev_close) / max(0.01, prev_close)) * 100, 2)
+        prev_close = prior_close
+        if prev_close is not None:
+            change_pct = round(((close_price - prev_close) / max(0.01, prev_close)) * 100, 2)
+            change_basis = "prev_close"
+        else:
+            # No real previous close: mark day change unavailable instead of
+            # presenting change-since-session-open as a day change.
+            change_pct = None
+            change_basis = "unavailable"
         open_change_pct = round(((close_price - open_price) / max(0.01, open_price)) * 100, 2)
 
         day_high = max(highs)
@@ -340,6 +365,7 @@ def build_session_snapshot(
             "session_open": open_price,
             "previous_close": prev_close,
             "change_pct": change_pct,
+            "change_basis": change_basis,
             "open_change_pct": open_change_pct,
             "day_high": day_high,
             "day_low": day_low,
@@ -392,9 +418,9 @@ def build_session_snapshot(
     sell_candidates = [s for s in stocks_payload.values() if s["metrics"]["signal"] == "SELL" and not s["ai_decision"]["action"].startswith("AVOID")]
     neutral_candidates = [s for s in stocks_payload.values() if s["metrics"]["signal"] == "NEUTRAL" or s["ai_decision"]["action"].startswith("AVOID")]
 
-    advancers = [s for s in stocks_payload.values() if s["change_pct"] > 0]
-    decliners = [s for s in stocks_payload.values() if s["change_pct"] < 0]
-    unchanged = [s for s in stocks_payload.values() if s["change_pct"] == 0]
+    advancers = [s for s in stocks_payload.values() if s["change_pct"] is not None and s["change_pct"] > 0]
+    decliners = [s for s in stocks_payload.values() if s["change_pct"] is not None and s["change_pct"] < 0]
+    unchanged = [s for s in stocks_payload.values() if s["change_pct"] is not None and s["change_pct"] == 0]
 
     grade_counts = {
         "A+": sum(1 for s in stocks_payload.values() if s["ai_decision"].get("grade") == "A+"),
@@ -404,20 +430,22 @@ def build_session_snapshot(
     }
 
     # Top 5 gainers & losers
-    all_sorted = sorted(stocks_payload.values(), key=lambda s: s["change_pct"], reverse=True)
+    priced_stocks = [s for s in stocks_payload.values() if s["change_pct"] is not None]
+    all_sorted = sorted(priced_stocks, key=lambda s: s["change_pct"], reverse=True)
     top_gainers = [
         {"symbol": s["symbol"], "name": s["name"], "change_pct": s["change_pct"], "close": s["price"], "sector": s["sector"]}
         for s in all_sorted[:5]
     ]
     top_losers = [
         {"symbol": s["symbol"], "name": s["name"], "change_pct": s["change_pct"], "close": s["price"], "sector": s["sector"]}
-        for s in sorted(stocks_payload.values(), key=lambda s: s["change_pct"])[:5]
+        for s in sorted(priced_stocks, key=lambda s: s["change_pct"])[:5]
     ]
 
     # Sector summary
     sector_agg: Dict[str, List[float]] = {}
     for s in stocks_payload.values():
-        sector_agg.setdefault(s["sector"], []).append(s["change_pct"])
+        if s["change_pct"] is not None:
+            sector_agg.setdefault(s["sector"], []).append(s["change_pct"])
 
     sectors = []
     for sec, pcts in sector_agg.items():

@@ -8,7 +8,7 @@
 let flowData = null;
 let pinnedSymbol = null;
 let hoveredSymbol = null;
-let currentTimeframe = 5;
+let currentTimeframe = 1;
 let sessionState = "PREVIOUS";
 let sessionDate = "";
 let pollTimer = null;
@@ -242,7 +242,7 @@ function startLivePolling() {
     if (isTabVisible && sessionState === "LIVE") {
       fetchFlowData("auto");
     }
-  }, 15000);
+  }, 5000);
 }
 
 function stopLivePolling() {

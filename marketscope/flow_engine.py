@@ -236,7 +236,12 @@ def build_flow_payload(
                 pct_series.append(None)
                 vol_rel_series.append(None)
 
-        change_pct = float(sdata.get("change_pct", 0.0))
+        raw_change_pct = sdata.get("change_pct")
+        if raw_change_pct is None:
+            # No real previous close for this symbol-day: exclude it from
+            # day-change aggregations instead of inventing a 0.0% change.
+            continue
+        change_pct = float(raw_change_pct)
         changes_list.append(change_pct)
 
         sec = sdata.get("sector", "General")

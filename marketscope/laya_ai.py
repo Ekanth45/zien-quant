@@ -423,7 +423,7 @@ class LayaAIEngine:
 
     def _build_analysis_prompt(self, symbol: str, stock_data: Dict[str, Any], timeframe: int) -> str:
         price = stock_data.get("price", 0.0)
-        chg = stock_data.get("change_pct", 0.0)
+        chg = (stock_data.get("change_pct") or 0.0)
         vwap = stock_data.get("vwap", price)
         metrics = stock_data.get("metrics", {})
         raw = metrics.get("raw", {})
@@ -468,7 +468,7 @@ class LayaAIEngine:
         source: str = "local_llm",
     ) -> Dict[str, Any]:
         price = stock_data.get("price", 0.0)
-        chg = stock_data.get("change_pct", 0.0)
+        chg = (stock_data.get("change_pct") or 0.0)
         ai_dec = stock_data.get("ai_decision", {})
         return {
             "symbol": symbol,
@@ -499,7 +499,7 @@ class LayaAIEngine:
 
     def _build_rules_briefing(self, symbol: str, stock_data: Dict[str, Any], timeframe: int) -> Dict[str, Any]:
         price = stock_data.get("price", 0.0)
-        chg = stock_data.get("change_pct", 0.0)
+        chg = (stock_data.get("change_pct") or 0.0)
         vwap = stock_data.get("vwap", price)
         rvol = stock_data.get("rvol", 1.0)
         ai_dec = stock_data.get("ai_decision") or stock_data.get("decision", {})
@@ -652,7 +652,7 @@ class LayaAIEngine:
         sell_signals = 0
 
         for sym, s in stocks.items():
-            chg = s.get("change_pct", 0.0)
+            chg = (s.get("change_pct") or 0.0)
             sig = s.get("metrics", {}).get("signal", "NEUTRAL")
             if sig == "BUY":
                 buy_signals += 1
@@ -765,10 +765,10 @@ class LayaAIEngine:
                 s = stocks[current_symbol.upper()]
                 ai = s.get("ai_decision", {})
                 context_lines.append(
-                    f"Selected Stock: {current_symbol.upper()} | Price: ₹{s.get('price')} ({s.get('change_pct'):+.2f}%) | "
+                    f"Selected Stock: {current_symbol.upper()} | Price: ₹{s.get('price')} ({(s.get('change_pct') or s.get('open_change_pct') or 0.0):+.2f}%) | "
                     f"VWAP: ₹{s.get('vwap')} | Action: {ai.get('action')} | SL: ₹{ai.get('stop_loss')} | T1: ₹{ai.get('target_1')} (R:R {ai.get('risk_reward_ratio')})"
                 )
-            pos = sum(1 for st in stocks.values() if st.get("change_pct", 0) >= 0)
+            pos = sum(1 for st in stocks.values() if (st.get("change_pct") or 0.0) >= 0)
             context_lines.append(f"Market Breadth: {pos}/{len(stocks)} positive.")
 
         context_str = "\n".join(context_lines) if context_lines else "Live NSE Market Feed Active."

@@ -5,6 +5,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>CYBERNETIC QUANT TERMINAL // NSE-BSE ORDER BLOCK ANALYZER</title>
 <!-- Cyber Terminal Native Production Stylesheet -->
+<link rel="icon" href="/static/favicon.svg"/>
 <link rel="stylesheet" href="/static/cyber_terminal.css"/>
 
 <!-- Google Fonts: JetBrains Mono & Inter -->
@@ -153,25 +154,18 @@
 <div class="flex items-center space-x-2">
 <div class="w-2.5 h-2.5 rounded-sm bg-bull animate-ping"></div>
 <span class="text-xs font-black tracking-widest text-slate-100 uppercase">AURA QUANT // TERMINAL v4.8</span>
-<span class="text-[10px] px-1.5 py-0.5 rounded bg-bull/10 text-bull border border-bull/30 font-bold">LIVE DIRECT</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-bull/10 text-bull border border-bull/30 font-bold">LIVE · YAHOO FINANCE</span>
 </div>
 <div class="h-4 w-[1px] bg-slate-800"></div>
 <!-- NSE Benchmark Quick Ticker -->
 <div class="flex items-center space-x-4 text-xs">
 <div>
-<span class="text-slate-400 font-semibold">NIFTY 50:</span>
-<span class="text-white font-bold tracking-wider ml-1">24,852.15</span>
-<span class="text-bull font-bold ml-1 text-[11px]">+142.30 (+0.58%)</span>
+<span class="text-slate-400 font-semibold">TRACKED UNIVERSE:</span>
+<span class="text-white font-bold tracking-wider ml-1" id="trackedCount">--</span>
+<span class="text-bull font-bold ml-1 text-[11px]" id="advCount">ADV --</span>
+<span class="text-bear font-bold ml-1 text-[11px]" id="decCount">DEC --</span>
 </div>
-<div class="hidden md:block">
-<span class="text-slate-500 font-semibold">BANKNIFTY:</span>
-<span class="text-slate-200 font-bold ml-1">51,404.80</span>
-<span class="text-bull font-medium ml-1 text-[11px]">+210.45</span>
-</div>
-<div class="hidden lg:block text-slate-400">
-<span>VWAP:</span>
-<span class="text-amberGold font-semibold ml-0.5">24,790.40</span>
-</div>
+
 </div>
 </div>
 <!-- Center: Mini Breadth / Flow Sentiment Bar as seen in Reference Images -->
@@ -179,15 +173,15 @@
 <div class="flex items-center space-x-1 text-bull font-bold">
 <span class="text-[9px]">▲</span>
 <span>BULLISH</span>
-<span class="bg-bull/20 text-bull px-1 rounded text-[9px]">68%</span>
+<span id="breadthBullPct" class="bg-bull/20 text-bull px-1 rounded text-[9px]">--%</span>
 </div>
 <!-- Mini Sentiment Histogram Spectrum -->
 <div class="w-36 h-2 bg-slate-900 rounded-sm overflow-hidden flex items-center p-0.5 space-x-0.5">
-<div class="h-full bg-bull rounded-sm glow-green" style="width: 68%;"></div>
-<div class="h-full bg-bear rounded-sm glow-red" style="width: 32%;"></div>
+<div id="breadthBullBar" class="h-full bg-bull rounded-sm glow-green" style="width: 50%;"></div>
+<div id="breadthBearBar" class="h-full bg-bear rounded-sm glow-red" style="width: 50%;"></div>
 </div>
 <div class="flex items-center space-x-1 text-bear font-bold">
-<span class="bg-bear/20 text-bear px-1 rounded text-[9px]">32%</span>
+<span id="breadthBearPct" class="bg-bear/20 text-bear px-1 rounded text-[9px]">--%</span>
 <span>BEARISH</span>
 <span class="text-[9px]">▼</span>
 </div>
@@ -196,11 +190,11 @@
 <div class="flex items-center space-x-4 text-xs font-mono">
 <div class="text-[11px] text-slate-400 flex items-center space-x-1">
 <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyanLaser"></span>
-<span>NSE COLO LATENCY:</span>
-<span class="text-cyanLaser font-bold">0.8ms</span>
+<span>FEED RTT:</span>
+<span class="text-cyanLaser font-bold" id="coloLatency">--</span>
 </div>
 <div class="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-slate-200 font-semibold">
-          15:15:30 <span class="text-[9px] text-slate-500 uppercase">IST</span>
+<span id="istClock">--:--:--</span> <span class="text-[9px] text-slate-500 uppercase">IST</span>
 </div>
 </div>
 </header>
@@ -218,149 +212,59 @@
 <span class="w-1.5 h-1.5 rounded-full bg-cyanLaser animate-pulse"></span>
               FLOW ACCUMULATION &amp; TRAJECTORY FIELD
             </span>
-<span class="text-slate-500 text-[10px]">| CUMULATIVE DELTA SWARM</span>
+<span class="text-slate-500 text-[10px]">| SESSION % FROM OPEN</span>
 </div>
 <div class="flex items-center space-x-2 text-[10px] text-slate-400">
-<span class="px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700">TICK RESOLUTION: 100ms</span>
-<span class="px-1.5 py-0.5 rounded bg-bull/10 text-bull border border-bull/20 font-semibold">ORDER BOOK ACTIVE</span>
+<span class="px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700">1-MIN CANDLES · POLL 5s</span>
+
 </div>
 </div>
 <!-- Canvas Body with Y-Axis, Left Indicator Rail, SVG Flow and Floating HUD -->
 <div class="relative flex-1 w-full overflow-hidden flex">
 <!-- Y-Axis Scale Rail (Vertical) -->
 <div class="w-12 border-r border-slate-900/80 flex flex-col justify-between py-6 text-[9px] font-mono text-slate-500 select-none text-right pr-2 z-20 bg-[#03050a]/90 backdrop-blur-sm">
-<div class="text-bull/80 font-semibold">+5.0</div>
-<div class="text-bull/70">+3.0</div>
-<div class="text-bull/60">+2.0</div>
+<div class="text-bull/80 font-semibold">+3.0</div>
+<div class="text-bull/70">+2.0</div>
 <div class="text-bull/70 font-bold">+1.0</div>
 <div class="text-bull/80">+0.5</div>
-<div class="text-bull/90 font-medium">+0.2</div>
 <!-- Zero Line Mark -->
 <div class="text-white font-bold text-[10px] bg-slate-800/80 px-1 rounded border border-slate-600">0.0</div>
-<div class="text-bear/90 font-medium">-0.2</div>
 <div class="text-bear/80">-0.5</div>
-<div class="text-bear/70">-0.75</div>
 <div class="text-bear/80 font-bold">-1.0</div>
-<div class="text-bear/70">-1.25</div>
-<div class="text-bear/60">-1.5</div>
 <div class="text-bear/70">-2.0</div>
 <div class="text-bear/80 font-semibold">-3.0</div>
 </div>
 <!-- Left Mini Data Ribbon (blurred badges resembling reference image) -->
 <div class="w-20 hidden sm:flex flex-col justify-around py-4 pl-1 text-[8px] z-10 border-r border-slate-900/40 select-none">
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">OI SPREAD</div>
-<div class="font-bold text-bull text-[9px]">+328.4K</div>
+<div class="text-[7px] text-slate-500">AVG RVOL</div>
+<div class="font-bold text-bull text-[9px]" id="railAvgRvol">--</div>
 </div>
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">PE RATIO</div>
-<div class="font-bold text-slate-300">1.42</div>
+<div class="text-[7px] text-slate-500">ADV</div>
+<div class="font-bold text-slate-300" id="railAdv">--</div>
 </div>
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">CALL RES</div>
-<div class="font-bold text-bear">24,950</div>
+<div class="text-[7px] text-slate-500">DEC</div>
+<div class="font-bold text-bear" id="railDec">--</div>
 </div>
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">PUT SUP</div>
-<div class="font-bold text-bull">24,750</div>
+<div class="text-[7px] text-slate-500">TOP GAINER</div>
+<div class="font-bold text-bull" id="railTopGainer">--</div>
 </div>
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">MAX PAIN</div>
-<div class="font-bold text-amberGold">24,800</div>
+<div class="text-[7px] text-slate-500">TOP LOSER</div>
+<div class="font-bold text-amberGold" id="railTopLoser">--</div>
 </div>
 <div class="p-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-400 backdrop-blur">
-<div class="text-[7px] text-slate-500">DIVERG</div>
-<div class="font-bold text-bull">+14.2°</div>
+<div class="text-[7px] text-slate-500">AVG CHG</div>
+<div class="font-bold text-bull" id="railAvgChg">--</div>
 </div>
 </div>
 <!-- Central Canvas Field (SVG Multi-Trajectory Swarm) -->
 <div class="relative flex-1 h-full w-full overflow-hidden bg-void">
 <!-- SVG Quantum Trajectory Flow Chart -->
-<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none" viewbox="0 0 700 600">
-<defs>
-<!-- Green Gradient for Long Swarm -->
-<lineargradient id="longGrad" x1="0%" x2="100%" y1="0%" y2="0%">
-<stop offset="0%" stop-color="#00ff88" stop-opacity="0.2"></stop>
-<stop offset="60%" stop-color="#00ff88" stop-opacity="0.8"></stop>
-<stop offset="100%" stop-color="#00e5ff" stop-opacity="0.9"></stop>
-</lineargradient>
-<!-- Red Gradient for Short Swarm -->
-<lineargradient id="shortGrad" x1="0%" x2="100%" y1="0%" y2="0%">
-<stop offset="0%" stop-color="#ff1744" stop-opacity="0.2"></stop>
-<stop offset="60%" stop-color="#ff1744" stop-opacity="0.8"></stop>
-<stop offset="100%" stop-color="#ff2a55" stop-opacity="0.9"></stop>
-</lineargradient>
-<!-- Aperture Mask / Shading in Center -->
-<radialgradient cx="60%" cy="50%" id="funnelShade" r="50%">
-<stop offset="0%" stop-color="#000000" stop-opacity="0.95"></stop>
-<stop offset="50%" stop-color="#020713" stop-opacity="0.7"></stop>
-<stop offset="100%" stop-color="#000000" stop-opacity="0.1"></stop>
-</radialgradient>
-</defs>
-<!-- Horizontal Grid Lines -->
-<line stroke="#0f172a" stroke-dasharray="4,4" stroke-width="1" x1="0" x2="700" y1="120" y2="120"></line>
-<line stroke="#00e5ff" stroke-opacity="0.35" stroke-width="1.5" x1="0" x2="700" y1="210" y2="210"></line>
-<line stroke="#334155" stroke-width="1.5" x1="0" x2="700" y1="300" y2="300"></line>
-<line stroke="#ff1744" stroke-opacity="0.25" stroke-width="1.5" x1="0" x2="700" y1="390" y2="390"></line>
-<line stroke="#0f172a" stroke-dasharray="4,4" stroke-width="1" x1="0" x2="700" y1="480" y2="480"></line>
-<!-- Cyan Demand/Order Block Zone Rays -->
-<line class="glow-cyan" stroke="#00e5ff" stroke-width="2" x1="0" x2="420" y1="210" y2="210"></line>
-<line stroke="#2563eb" stroke-opacity="0.6" stroke-width="1.5" x1="0" x2="420" y1="440" y2="440"></line>
-<!-- Swarm Shaded Fill Areas (Bullish upper cloud) -->
-<path d="M 0 300 C 50 290, 90 270, 140 240 C 200 200, 260 120, 340 100 C 380 90, 410 110, 420 180 L 420 300 Z" fill="#00ff88" fill-opacity="0.08"></path>
-<!-- Swarm Shaded Fill Areas (Bearish lower cloud) -->
-<path d="M 0 300 C 50 310, 90 330, 140 370 C 200 420, 260 480, 340 500 C 380 510, 410 490, 420 380 L 420 300 Z" fill="#ff1744" fill-opacity="0.08"></path>
-<!-- ================= MULTIPLE DIVERGENT FLOW CURVES (GREEN / BULLISH) ================= -->
-<g fill="none" opacity="0.65" stroke="url(#longGrad)">
-<path d="M 0 300 Q 50 290 100 260 T 220 140 T 350 80 T 420 120" stroke-width="0.8"></path>
-<path d="M 0 300 Q 60 280 120 230 T 250 110 T 370 70 T 420 135" stroke-width="1"></path>
-<path d="M 0 300 Q 70 270 140 200 T 280 100 T 390 85 T 420 150" stroke-width="0.75"></path>
-<path d="M 0 300 Q 80 260 160 170 T 300 95 T 400 95 T 420 165" stroke-width="1.2"></path>
-<path d="M 0 300 Q 90 250 180 160 T 320 110 T 410 120 T 420 180" stroke-width="0.9"></path>
-<path d="M 0 300 Q 100 260 200 180 T 330 130 T 410 150 T 420 195" stroke-width="1.1"></path>
-<path d="M 0 300 Q 110 270 220 200 T 340 160 T 415 180 T 420 210" stroke-width="0.7"></path>
-<path d="M 0 300 Q 120 280 240 220 T 350 190 T 415 200 T 420 230" stroke-width="0.9"></path>
-<path d="M 0 300 Q 130 290 260 240 T 360 220 T 415 225 T 420 250" stroke-width="1.3"></path>
-<path d="M 0 300 Q 140 295 280 260 T 380 240 T 415 240 T 420 265" stroke-width="0.8"></path>
-</g>
-<!-- Prominent Leading Alpha Green Trajectory Line (Exact path from IMAGE_12) -->
-<path class="glow-green" d="M 0 300 C 40 290, 70 270, 95 285 C 115 295, 140 270, 170 215 C 200 160, 240 165, 275 190 C 310 220, 340 200, 370 170 C 400 140, 410 160, 420 175" fill="none" stroke="#00ff88" stroke-linecap="round" stroke-width="3"></path>
-<!-- Crosshair intersection dot on the Leading Path -->
-<circle class="glow-green animate-pulse" cx="370" cy="170" fill="#00ff88" r="4"></circle>
-<circle cx="370" cy="170" fill="none" r="8" stroke="#00e5ff" stroke-dasharray="2,2" stroke-width="1"></circle>
-<!-- ================= MULTIPLE DIVERGENT FLOW CURVES (RED / BEARISH) ================= -->
-<g fill="none" opacity="0.65" stroke="url(#shortGrad)">
-<path d="M 0 300 Q 50 310 100 340 T 220 460 T 350 520 T 420 480" stroke-width="0.8"></path>
-<path d="M 0 300 Q 60 320 120 370 T 250 490 T 370 530 T 420 465" stroke-width="1"></path>
-<path d="M 0 300 Q 70 330 140 400 T 280 500 T 390 515 T 420 450" stroke-width="0.75"></path>
-<path d="M 0 300 Q 80 340 160 430 T 300 505 T 400 505 T 420 435" stroke-width="1.2"></path>
-<path d="M 0 300 Q 90 350 180 440 T 320 490 T 410 480 T 420 420" stroke-width="0.9"></path>
-<path d="M 0 300 Q 100 340 200 420 T 330 470 T 410 450 T 420 405" stroke-width="1.1"></path>
-<path d="M 0 300 Q 110 330 220 400 T 340 440 T 415 420 T 420 390" stroke-width="0.7"></path>
-<path d="M 0 300 Q 120 320 240 380 T 350 410 T 415 400 T 420 370" stroke-width="0.9"></path>
-<path d="M 0 300 Q 130 310 260 360 T 360 380 T 415 375 T 420 350" stroke-width="1.3"></path>
-<path d="M 0 300 Q 140 305 280 340 T 380 360 T 415 360 T 420 335" stroke-width="0.8"></path>
-</g>
-<!-- Central Dark Hourglass Funnel Aperture Background -->
-<path d="M 420 80 Q 460 220 480 300 Q 460 380 420 520 L 480 520 Q 520 380 540 300 Q 520 220 480 80 Z" fill="url(#funnelShade)"></path>
-<!-- High Density Central Vertical Laser Scanning Reticle / Gate -->
-<line class="glow-cyan" stroke="#00e5ff" stroke-width="1.8" x1="420" x2="420" y1="40" y2="560"></line>
-<!-- Reticle Target Nodes on Scanning Gate -->
-<rect class="glow-green" fill="#00ff88" height="3" width="8" x="416" y="80"></rect>
-<rect class="glow-cyan" fill="#ffffff" height="4" width="8" x="416" y="300"></rect>
-<rect class="glow-red" fill="#ff1744" height="3" width="8" x="416" y="515"></rect>
-<!-- Outbound Dense Laser Conduits Routing into Right Matrices -->
-<!-- Bullish Conduit Green Trunk -->
-<path d="M 420 120 C 480 120, 520 60, 700 60" fill="none" stroke="#00ff88" stroke-opacity="0.8" stroke-width="1.5"></path>
-<path d="M 420 180 C 490 180, 530 110, 700 110" fill="none" stroke="#00ff88" stroke-opacity="0.7" stroke-width="1.2"></path>
-<path d="M 420 220 C 470 220, 540 180, 700 180" fill="none" stroke="#00ff88" stroke-opacity="0.6" stroke-width="1.0"></path>
-<path d="M 420 260 C 460 260, 530 240, 700 240" fill="none" stroke="#00e5ff" stroke-dasharray="3,3" stroke-width="1.8"></path>
-<!-- Bearish Conduit Red Trunk -->
-<path d="M 420 340 C 460 340, 530 360, 700 360" fill="none" stroke="#00e5ff" stroke-dasharray="3,3" stroke-width="1.8"></path>
-<path d="M 420 380 C 470 380, 540 420, 700 420" fill="none" stroke="#ff1744" stroke-opacity="0.6" stroke-width="1.0"></path>
-<path d="M 420 440 C 490 440, 530 490, 700 490" fill="none" stroke="#ff1744" stroke-opacity="0.7" stroke-width="1.2"></path>
-<path d="M 420 500 C 480 500, 520 540, 700 540" fill="none" stroke="#ff1744" stroke-opacity="0.8" stroke-width="1.5"></path>
-</svg>
+<canvas id="trajCanvas" class="absolute inset-0 w-full h-full"></canvas>
 <!-- FLOATING HUD ORDER BLOCK TERMINAL CARD (Exact Replica from IMAGE_12) -->
 <div class="absolute top-[20%] left-[20%] sm:left-[26%] w-72 sm:w-84 bg-[#061118]/95 border-2 border-bull/70 rounded-xl p-3.5 shadow-2xl backdrop-blur-md z-30 glow-green" data-purpose="floating-order-block-card">
   <!-- Card Top Header with Sparkline -->
@@ -400,11 +304,11 @@
       <span id="spotlightPriceVwap" class="text-white font-bold">₹2,307.00 <span class="text-amberGold text-[9px]">(VWAP: 2,295.40)</span></span>
     </div>
     <div class="flex justify-between items-center py-0.5 border-b border-slate-800/80">
-      <span class="text-slate-400 font-semibold tracking-wider">Δ DELTA / RVOL</span>
-      <span id="spotlightDeltaRvol" class="text-cyanLaser font-bold">+5,128.56 LAKHS (2.4x)</span>
+      <span class="text-slate-400 font-semibold tracking-wider">RVOL / VOLUME</span>
+      <span id="spotlightDeltaRvol" class="text-cyanLaser font-bold">--</span>
     </div>
     <div class="flex justify-between items-center py-0.5">
-      <span class="text-slate-400 font-semibold tracking-wider">CONFIRMED ZONE</span>
+      <span class="text-slate-400 font-semibold tracking-wider">ACTIVE OB ZONE</span>
       <span id="spotlightZone" class="text-bull font-bold uppercase text-[9px]">DEMAND OB [2,280 - 2,295]</span>
     </div>
   </div>
@@ -449,11 +353,11 @@
 <div class="flex items-center justify-between mb-2 pb-1 border-b border-bull/20">
   <div class="flex items-center space-x-2">
     <span class="w-2.5 h-2.5 bg-bull rounded-sm glow-green"></span>
-    <h2 class="text-xs font-black tracking-widest text-bull uppercase">LONG BUILD-UP MATRIX // CALL ACCUMULATION</h2>
-    <span id="longBuildupBadge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-bull/20 text-bull border border-bull/40">DOMINANT BUY FLOW</span>
+    <h2 class="text-xs font-black tracking-widest text-bull uppercase">LONG BUILD-UP MATRIX // BULLISH FLOW</h2>
+    
   </div>
   <div class="text-[10px] text-slate-400 font-mono">
-    TOTAL LONG DELTA: <span id="longBuildupTotalOi" class="text-bull font-bold">+14,248.91 LAKHS</span>
+    BULLISH TRACKED: <span id="longBuildupTotalOi" class="text-bull font-bold">--</span>
   </div>
 </div>
 
@@ -479,11 +383,11 @@
 <div class="flex items-center justify-between mb-2 pb-1 border-b border-bear/20">
   <div class="flex items-center space-x-2">
     <span class="w-2.5 h-2.5 bg-bear rounded-sm glow-red"></span>
-    <h2 class="text-xs font-black tracking-widest text-bear uppercase">SHORT BUILD-UP MATRIX // PUT UNWIND & DISTRIBUTION</h2>
-    <span id="shortBuildupBadge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-bear/20 text-bear border border-bear/40">SUPPLY OVERHANG</span>
+    <h2 class="text-xs font-black tracking-widest text-bear uppercase">SHORT BUILD-UP MATRIX // BEARISH FLOW</h2>
+    
   </div>
   <div class="text-[10px] text-slate-400 font-mono">
-    TOTAL SHORT DELTA: <span id="shortBuildupTotalOi" class="text-bear font-bold">-18,910.74 LAKHS</span>
+    BEARISH TRACKED: <span id="shortBuildupTotalOi" class="text-bear font-bold">--</span>
   </div>
 </div>
 
@@ -511,28 +415,28 @@
   <div class="flex items-center space-x-5">
     <div class="flex items-center space-x-1.5">
       <span class="w-2 h-2 rounded-full bg-bull animate-pulse"></span>
-      <span id="footerSyncStatus" class="text-slate-300 font-semibold">T-0 QUANT ALGO SYNCHRONIZED</span>
+      <span id="footerSyncStatus" class="text-slate-300 font-semibold">LIVE FEED · YAHOO FINANCE 1-MIN CANDLES</span>
     </div>
     <div class="hidden sm:inline-block text-slate-600">|</div>
     <div class="hidden sm:flex items-center space-x-1">
-      <span>AGGREGATE DELTA:</span>
-      <span id="footerAggregateDelta" class="text-bull font-bold">+18,492.30 LAKHS</span>
+      <span>AVG CHANGE:</span>
+      <span id="footerAggregateDelta" class="text-bull font-bold">--</span>
     </div>
     <div class="hidden md:inline-block text-slate-600">|</div>
     <div class="hidden md:flex items-center space-x-1">
-      <span>PCR RATIO:</span>
-      <span id="footerPcrRatio" class="text-amberGold font-bold">1.28 (BULLISH ACCUMULATION)</span>
+      <span>BREADTH:</span>
+      <span id="footerPcrRatio" class="text-amberGold font-bold">--</span>
     </div>
     <div class="hidden xl:inline-block text-slate-600">|</div>
     <div class="hidden xl:flex items-center space-x-1">
       <span>TRACKED STOCKS:</span>
-      <span id="footerTrackedCount" class="text-cyanLaser font-bold">24 Active</span>
+      <span id="footerTrackedCount" class="text-cyanLaser font-bold">--</span>
     </div>
   </div>
 
   <!-- Quick Interactive Actions -->
   <div class="flex items-center space-x-3">
-    <span class="text-[10px] text-slate-500">POLL: 2.5s</span>
+    <span class="text-[10px] text-slate-500">POLL: 5s</span>
     <button id="exportCsvBtn" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 hover:border-cyanLaser text-slate-300 text-[10px] transition-colors flex items-center gap-1 cursor-pointer">
       <span>📥</span>
       <span>EXPORT CSV</span>
@@ -696,7 +600,7 @@
     stockList: [],
     signalTiles: { buy: [], sell: [] },
     spotlightStock: null,
-    timeframe: '5',
+    timeframe: '1',
     audioEnabled: false,
     lastTickTime: Date.now(),
     searchQuery: '',
@@ -764,21 +668,19 @@
     const pad = (n) => String(n).padStart(2, '0');
     clockEl.textContent = `${pad(ist.getHours())}:${pad(ist.getMinutes())}:${pad(ist.getSeconds())}`;
     
-    // Slight latency jitter between 0.6ms and 1.2ms
-    const latencyEl = document.getElementById('coloLatency');
-    if (latencyEl) {
-      const lat = 0.8;
-      latencyEl.textContent = `${lat}ms`;
-    }
   }
   setInterval(updateClock, 1000);
 
   // Main Fetch Loop
   async function fetchMarketData() {
     try {
+      const t0 = performance.now();
       const resp = await fetch(`/api/market?mode=live&timeframe=${state.timeframe}`);
       if (!resp.ok) return;
       const data = await resp.json();
+      const rttEl = document.getElementById('coloLatency');
+      if (rttEl) rttEl.textContent = `${Math.round(performance.now() - t0)} ms`;
+      fetchFlowTrajectories();
 
       state.stocks = data.stocks || {};
       state.stockList = Object.values(state.stocks);
@@ -820,7 +722,9 @@
     // Breadth calculation
     let advances = 0, declines = 0;
     stocks.forEach(s => {
-      if ((s.change_pct || 0) >= 0) advances++;
+      const eff = s.change_pct ?? s.open_change_pct;
+      if (eff === null || eff === undefined) return;
+      if (eff >= 0) advances++;
       else declines++;
     });
     const total = advances + declines || 1;
@@ -837,26 +741,12 @@
     if (bBullBarEl) bBullBarEl.style.width = `${bullPct}%`;
     if (bBearBarEl) bBearBarEl.style.width = `${bearPct}%`;
 
-    // Benchmark representation matching live scale
-    if (niftyPriceEl) {
-      const baseNifty = 24800 + (advances - declines) * 1.8;
-      niftyPriceEl.textContent = baseNifty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    if (niftyChgEl) {
-      const chg = ((bullPct - 50) * 4.2).toFixed(2);
-      const isPos = chg >= 0;
-      niftyChgEl.className = `${isPos ? 'text-bull' : 'text-bear'} font-bold ml-1 text-[11px]`;
-      niftyChgEl.textContent = `${isPos ? '+' : ''}${chg} (${isPos ? '+' : ''}${(chg / 248).toFixed(2)}%)`;
-    }
-    if (niftyVwapEl) {
-      niftyVwapEl.textContent = '24,790.40';
-    }
-    if (bnfPriceEl) {
-      bnfPriceEl.textContent = '51,404.80';
-    }
-    if (bnfChgEl) {
-      bnfChgEl.textContent = '+210.45';
-    }
+    const trackedEl = document.getElementById('trackedCount');
+    const advEl = document.getElementById('advCount');
+    const decEl = document.getElementById('decCount');
+    if (trackedEl) trackedEl.textContent = `${stocks.length}`;
+    if (advEl) advEl.textContent = `ADV ${advances}`;
+    if (decEl) decEl.textContent = `DEC ${declines}`;
   }
 
   // 2. Render Spotlight HUD Card
@@ -872,22 +762,23 @@
     const actionEl = document.getElementById('spotlightSetupAction');
     const inspectBtn = document.getElementById('spotlightInspectBtn');
 
-    const score = s.metrics?.score || s.score || 75;
-    const isBull = score >= 50;
+    const rawScore = s.metrics?.score;
+    const hasScore = rawScore !== null && rawScore !== undefined;
+    const effChg = s.change_pct ?? s.open_change_pct ?? 0;
+    const isBull = hasScore ? rawScore >= 50 : effChg >= 0;
 
     if (symEl) {
       symEl.innerHTML = `${s.symbol} <span class="w-1.5 h-1.5 rounded-full ${isBull ? 'bg-bull' : 'bg-bear'} animate-ping"></span>`;
     }
     if (scoreEl) {
       scoreEl.className = `${isBull ? 'text-bull' : 'text-bear'} font-extrabold tracking-wide`;
-      scoreEl.textContent = `${score} / 100 [${isBull ? 'BULL ACCUM' : 'BEAR DISTRIB'}]`;
+      scoreEl.textContent = hasScore ? `${rawScore} / 100 [${s.metrics?.signal || (isBull ? 'BULLISH' : 'BEARISH')}]` : `N/A [${s.ai_decision?.action || 'INSUFFICIENT DATA'}]`;
     }
     if (pvEl) {
       pvEl.innerHTML = `₹${s.price?.toFixed(2)} <span class="text-amberGold text-[9px]">(VWAP: ${s.vwap ? s.vwap.toFixed(1) : '---'})</span>`;
     }
     if (drEl) {
-      const deltaLakhs = ((s.change_pct || 0) * (s.rvol || 1) * 2400).toFixed(2);
-      drEl.textContent = `${deltaLakhs >= 0 ? '+' : ''}${deltaLakhs} LAKHS (${(s.rvol || 1).toFixed(1)}x)`;
+      drEl.textContent = `RVOL ${(s.rvol || 0).toFixed(2)}x · VOL ${((s.volume || 0) / 100000).toFixed(1)}L`;
     }
     if (zoneEl) {
       const obs = s.order_blocks || [];
@@ -895,11 +786,11 @@
         const ob = obs[obs.length - 1];
         zoneEl.textContent = `${ob.type.toUpperCase()} OB [${ob.low.toFixed(1)} - ${ob.high.toFixed(1)}]`;
       } else {
-        zoneEl.textContent = isBull ? 'DEMAND ZONE [ACCUMULATION]' : 'SUPPLY ZONE [OVERHANG]';
+        zoneEl.textContent = 'NO ACTIVE OB ZONE';
       }
     }
     if (actionEl) {
-      actionEl.textContent = s.ai_decision?.action || (isBull ? 'BREAKOUT CONFIRMED' : 'DISTRIBUTION OVERHANG');
+      actionEl.textContent = s.ai_decision?.action || '--';
     }
     if (inspectBtn) {
       inspectBtn.onclick = () => openStockModal(s);
@@ -912,23 +803,50 @@
     if (stocks.length === 0) return;
 
     let totalRvol = 0;
-    stocks.forEach(s => totalRvol += (s.rvol || 1));
+    stocks.forEach(s => totalRvol += (s.rvol ?? 0));
     const avgRvol = (totalRvol / stocks.length).toFixed(2);
 
-    const railOi = document.getElementById('railOiSpread');
-    const railPe = document.getElementById('railPeRatio');
-    const railCall = document.getElementById('railCallRes');
-    const railPut = document.getElementById('railPutSup');
-    const railPain = document.getElementById('railMaxPain');
-    const railDiv = document.getElementById('railDiverg');
-
-    if (railOi) railOi.textContent = `+${(stocks.length * 14.2).toFixed(1)}K`;
-    if (railPe) railPe.textContent = '1.42';
-    if (railCall) railCall.textContent = '24,950';
-    if (railPut) railPut.textContent = '24,750';
-    if (railPain) railPain.textContent = '24,800';
-    if (railDiv) railDiv.textContent = `+${(avgRvol * 6.5).toFixed(1)}°`;
+    let adv = 0, dec = 0, chgSum = 0, topG = null, topL = null;
+    stocks.forEach(s => {
+      const c = s.change_pct ?? s.open_change_pct;
+      if (c === null || c === undefined) return;
+      if (c >= 0) adv++; else dec++;
+      chgSum += c;
+      const g = topG ? (topG.change_pct ?? topG.open_change_pct ?? -Infinity) : -Infinity;
+      const l = topL ? (topL.change_pct ?? topL.open_change_pct ?? Infinity) : Infinity;
+      if (c > g) topG = s;
+      if (c < l) topL = s;
+    });
+    const setRail = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setRail('railAvgRvol', `${avgRvol}x`);
+    setRail('railAdv', `${adv}`);
+    setRail('railDec', `${dec}`);
+    setRail('railTopGainer', topG ? topG.symbol : '--');
+    setRail('railTopLoser', topL ? topL.symbol : '--');
+    setRail('railAvgChg', `${(chgSum / stocks.length).toFixed(2)}%`);
   }
+
+  // Effective displayed change: day change when priced, else session-open move
+  function effChg(s) { return s.change_pct ?? s.open_change_pct ?? 0; }
+  function sortKey(s) { return s.metrics?.score ?? effChg(s); }
+  function actionable(dec) {
+    const a = dec?.action;
+    return !!a && !a.startsWith('AVOID') && a !== 'INSUFFICIENT DATA';
+  }
+  // Real mini-sparkline from the stock's last candles; dashed line marks VWAP
+  function sparkSvg(s, stroke, glowClass) {
+    const candles = (s.candles_preview || []).map(c => c.c).filter(v => typeof v === 'number');
+    if (candles.length < 2) return '';
+    const min = Math.min(...candles), max = Math.max(...candles);
+    const span = (max - min) || 1;
+    const yOf = v => 22 - ((v - min) / span) * 20;
+    const step = 90 / (candles.length - 1);
+    const pts = candles.map((v, i) => `${(i * step).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+    const vwapLine = (typeof s.vwap === 'number' && s.vwap >= min && s.vwap <= max)
+      ? `<line stroke="#ffab00" stroke-dasharray="2,2" stroke-width="1" x1="0" x2="90" y1="${yOf(s.vwap).toFixed(1)}" y2="${yOf(s.vwap).toFixed(1)}"></line>` : '';
+    return `<svg class="w-24 h-6 ml-auto" viewBox="0 0 90 24">${vwapLine}<polyline class="${glowClass}" fill="none" points="${pts}" stroke="${stroke}" stroke-width="1.8"></polyline></svg>`;
+  }
+  function fmtLevel(v) { return (typeof v === 'number' && isFinite(v)) ? `₹${v.toFixed(1)}` : '--'; }
 
   // 4. Render Long Buildup (Top Half)
   function renderLongBuildup() {
@@ -937,24 +855,19 @@
     const totalOiEl = document.getElementById('longBuildupTotalOi');
     if (!container || !heroContainer) return;
 
-    // Filter bullish stocks sorted by score
-    const bullStocks = [...state.stockList].filter(s => (s.change_pct || 0) >= 0 || (s.metrics?.score || 0) >= 50);
-    bullStocks.sort((a, b) => (b.metrics?.score || 0) - (a.metrics?.score || 0));
+    // Bullish side: each stock appears on exactly one side of the matrix
+    const bullStocks = [...state.stockList].filter(s => effChg(s) >= 0);
+    bullStocks.sort((a, b) => sortKey(b) - sortKey(a));
 
-    // Fallback fill if less than 8
     const top8 = bullStocks.slice(0, 8);
-    while (top8.length < 8 && state.stockList.length > 0) {
-      top8.push(state.stockList[top8.length % state.stockList.length]);
-    }
 
     // Micro cards
     container.innerHTML = top8.map((s, idx) => {
       const price = s.price?.toFixed(1) || '0.0';
-      const chg = s.change_pct || 0;
-      const score = s.metrics?.score || 70 + idx;
-      const w1 = Math.min(98, 60 + idx * 4);
-      const w2 = Math.max(45, 90 - idx * 5);
-      const w3 = Math.min(95, 75 + idx * 2);
+      const chg = effChg(s);
+      const w1 = Math.min(98, Math.max(0, s.metrics?.score ?? 0));
+      const w2 = Math.min(98, ((s.rvol ?? 0) / 3) * 100);
+      const w3 = Math.min(98, (Math.abs(chg) / 3) * 100);
 
       return `
         <div class="hud-box bg-[#04120b]/90 border border-bull/40 rounded p-1.5 flex flex-col justify-between hover:border-bull transition-colors cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
@@ -963,12 +876,12 @@
             <span class="text-slate-200 font-bold">₹${price}</span>
           </div>
           <div class="my-1 space-y-0.5">
-            <div class="h-1 bg-bull/80 rounded-sm w-[${w1}%] glow-green"></div>
-            <div class="h-1 bg-bull/60 rounded-sm w-[${w2}%]"></div>
-            <div class="h-1 bg-bull/90 rounded-sm w-[${w3}%] glow-green"></div>
+            <div class="h-1 bg-bull/80 rounded-sm glow-green" style="width:${w1}%" title="Composite score / 100"></div>
+            <div class="h-1 bg-bull/60 rounded-sm" style="width:${w2}%" title="Relative volume (3x = full bar)"></div>
+            <div class="h-1 bg-bull/90 rounded-sm glow-green" style="width:${w3}%" title="Absolute change (3% = full bar)"></div>
           </div>
           <div class="flex justify-between text-[8px] text-slate-400">
-            <span>OB: ₹${s.support?.toFixed(0) || price}</span>
+            <span>OB: ${fmtLevel(s.support)}</span>
             <span class="text-bull font-bold">+${Math.abs(chg).toFixed(2)}%</span>
           </div>
         </div>
@@ -978,44 +891,44 @@
     // Hero Bull cards (Top 3 signals)
     const top3 = bullStocks.slice(0, 3);
     heroContainer.innerHTML = top3.map((s, i) => {
-      const score = s.metrics?.score || 85 + i * 2;
-      const delta = ((s.change_pct || 1) * 2100).toFixed(1);
-      const target = s.ai_decision?.target1 || (s.price * 1.025).toFixed(1);
-      const sl = s.ai_decision?.stop_loss || (s.price * 0.985).toFixed(1);
+      const score = s.metrics?.score ?? 'N/A';
+      const chgTxt = `${effChg(s) >= 0 ? "+" : ""}${effChg(s).toFixed(2)}%`;
+      const tradable = actionable(s.ai_decision);
+      const rrTxt = tradable && s.ai_decision?.risk_reward_ratio ? `R:R 1:${s.ai_decision.risk_reward_ratio}` : 'R:R --';
+      const target = tradable ? fmtLevel(s.ai_decision?.target_1) : '--';
+      const sl = tradable ? fmtLevel(s.ai_decision?.stop_loss) : '--';
+      const badge = tradable ? 'BUY' : 'N/A';
 
       return `
         <div class="bg-gradient-to-r from-[#051c11] to-[#08291a] border border-bull/60 rounded-lg p-2.5 shadow-lg flex flex-col justify-between hover:border-bull transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <div class="w-7 h-7 rounded-full bg-bull/20 border border-bull flex items-center justify-center">
-                <span class="text-[9px] font-bold text-bull">BUY</span>
+                <span class="text-[9px] font-bold text-bull">${badge}</span>
               </div>
               <div>
                 <span class="text-xs font-black tracking-widest text-bull uppercase">${s.symbol}</span>
-                <div class="text-[8px] text-slate-400">SCORE: ${score}/100</div>
+                <div class="text-[8px] text-slate-400">SCORE: ${score}${score === 'N/A' ? '' : '/100'}</div>
               </div>
             </div>
             <div class="text-right">
               <div class="text-[9px] font-mono text-slate-400">
-                OI: <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | Δ: <span class="text-bull font-bold">+${delta}</span>
+                <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | <span class="text-bull font-bold">${chgTxt}</span>
               </div>
-              <svg class="w-24 h-6 ml-auto" viewBox="0 0 90 24">
-                <line stroke="#ffab00" stroke-dasharray="2,2" stroke-width="1" x1="0" x2="90" y1="14" y2="14"></line>
-                <polyline class="glow-green" fill="none" points="0,20 20,18 35,12 55,14 70,6 90,2" stroke="#00ff88" stroke-width="2"></polyline>
-              </svg>
+              ${sparkSvg(s, '#00ff88', 'glow-green')}
             </div>
           </div>
           <div class="mt-2 pt-1 border-t border-bull/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
-            <span>SL: <b class="text-white">₹${sl}</b></span>
-            <span>T1: <b class="text-white">₹${target}</b></span>
-            <span class="text-bull font-bold">R:R 1:2.8</span>
+            <span>SL: <b class="text-white">${sl}</b></span>
+            <span>T1: <b class="text-white">${target}</b></span>
+            <span class="text-bull font-bold">${rrTxt}</span>
           </div>
         </div>
       `;
     }).join('');
 
     if (totalOiEl) {
-      totalOiEl.textContent = `+${(top8.length * 1780.2).toFixed(2)} LAKHS`;
+      totalOiEl.textContent = `${top8.length}`;
     }
   }
 
@@ -1027,21 +940,17 @@
     if (!container || !heroContainer) return;
 
     // Filter bearish or neutral stocks sorted by change ascending
-    const bearStocks = [...state.stockList].filter(s => (s.change_pct || 0) < 0 || (s.metrics?.score || 0) < 50);
-    bearStocks.sort((a, b) => (a.metrics?.score || 0) - (b.metrics?.score || 0));
+    const bearStocks = [...state.stockList].filter(s => effChg(s) < 0);
+    bearStocks.sort((a, b) => sortKey(a) - sortKey(b));
 
-    // Fallback fill if less than 8
     const top8 = bearStocks.slice(0, 8);
-    while (top8.length < 8 && state.stockList.length > 0) {
-      top8.push(state.stockList[state.stockList.length - 1 - (top8.length % state.stockList.length)]);
-    }
 
     container.innerHTML = top8.map((s, idx) => {
       const price = s.price?.toFixed(1) || '0.0';
-      const chg = s.change_pct || 0;
-      const w1 = Math.min(96, 50 + idx * 5);
-      const w2 = Math.max(40, 85 - idx * 4);
-      const w3 = Math.min(92, 60 + idx * 3);
+      const chg = effChg(s);
+      const w1 = Math.min(96, Math.max(0, 100 - (s.metrics?.score ?? 100)));
+      const w2 = Math.min(96, ((s.rvol ?? 0) / 3) * 100);
+      const w3 = Math.min(96, (Math.abs(chg) / 3) * 100);
 
       return `
         <div class="hud-box hud-box-red bg-[#160408]/90 border border-bear/40 rounded p-1.5 flex flex-col justify-between hover:border-bear transition-colors cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
@@ -1050,12 +959,12 @@
             <span class="text-slate-200 font-bold">₹${price}</span>
           </div>
           <div class="my-1 space-y-0.5">
-            <div class="h-1 bg-bear/80 rounded-sm w-[${w1}%] glow-red"></div>
-            <div class="h-1 bg-bear/60 rounded-sm w-[${w2}%]"></div>
-            <div class="h-1 bg-bear/90 rounded-sm w-[${w3}%] glow-red"></div>
+            <div class="h-1 bg-bear/80 rounded-sm glow-red" style="width:${w1}%" title="Bearishness (100 - score) / 100"></div>
+            <div class="h-1 bg-bear/60 rounded-sm" style="width:${w2}%" title="Relative volume (3x = full bar)"></div>
+            <div class="h-1 bg-bear/90 rounded-sm glow-red" style="width:${w3}%" title="Absolute change (3% = full bar)"></div>
           </div>
           <div class="flex justify-between text-[8px] text-slate-400">
-            <span>RES: ₹${s.resistance?.toFixed(0) || price}</span>
+            <span>RES: ${fmtLevel(s.resistance)}</span>
             <span class="text-bear font-bold">${chg.toFixed(2)}%</span>
           </div>
         </div>
@@ -1064,66 +973,72 @@
 
     const top3 = bearStocks.slice(0, 3);
     heroContainer.innerHTML = top3.map((s) => {
-      const score = s.metrics?.score || 42;
-      const delta = ((s.change_pct || -0.8) * 1950).toFixed(1);
-      const sl = s.ai_decision?.stop_loss || (s.price * 1.018).toFixed(1);
-      const target = s.ai_decision?.target1 || (s.price * 0.975).toFixed(1);
+      const score = s.metrics?.score ?? 'N/A';
+      const chgTxt = `${effChg(s) >= 0 ? "+" : ""}${effChg(s).toFixed(2)}%`;
+      const tradable = actionable(s.ai_decision);
+      const rrTxt = tradable && s.ai_decision?.risk_reward_ratio ? `R:R 1:${s.ai_decision.risk_reward_ratio}` : 'R:R --';
+      const sl = tradable ? fmtLevel(s.ai_decision?.stop_loss) : '--';
+      const target = tradable ? fmtLevel(s.ai_decision?.target_1) : '--';
+      const badge = tradable ? 'SELL' : 'N/A';
 
       return `
         <div class="bg-gradient-to-r from-[#21060c] to-[#300912] border border-bear/50 rounded-lg p-2.5 shadow-lg flex flex-col justify-between hover:border-bear transition-all cursor-pointer" onclick="window.openStockDetail('${s.symbol}')">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <div class="w-7 h-7 rounded-full bg-bear/20 border border-bear flex items-center justify-center">
-                <span class="text-[9px] font-bold text-bear">SELL</span>
+                <span class="text-[9px] font-bold text-bear">${badge}</span>
               </div>
               <div>
                 <span class="text-xs font-black tracking-widest text-bear uppercase">${s.symbol}</span>
-                <div class="text-[8px] text-slate-400">SCORE: ${score}/100</div>
+                <div class="text-[8px] text-slate-400">SCORE: ${score}${score === 'N/A' ? '' : '/100'}</div>
               </div>
             </div>
             <div class="text-right">
               <div class="text-[9px] font-mono text-slate-400">
-                OI: <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | Δ: <span class="text-bear font-bold">${delta}</span>
+                <span class="text-white font-bold">₹${s.price?.toFixed(1)}</span> | <span class="text-bear font-bold">${chgTxt}</span>
               </div>
-              <svg class="w-24 h-6 ml-auto" viewBox="0 0 90 24">
-                <line stroke="#ffab00" stroke-dasharray="2,2" stroke-width="1" x1="0" x2="90" y1="12" y2="12"></line>
-                <polyline class="glow-red" fill="none" points="0,6 20,8 45,14 70,18 90,23" stroke="#ff1744" stroke-width="1.8"></polyline>
-              </svg>
+              ${sparkSvg(s, '#ff1744', 'glow-red')}
             </div>
           </div>
           <div class="mt-2 pt-1 border-t border-bear/20 flex items-center justify-between text-[8px] font-mono text-slate-400">
-            <span>RES: <b class="text-white">₹${sl}</b></span>
-            <span>T1: <b class="text-white">₹${target}</b></span>
-            <span class="text-bear font-bold">R:R 1:2.4</span>
+            <span>SL: <b class="text-white">${sl}</b></span>
+            <span>T1: <b class="text-white">${target}</b></span>
+            <span class="text-bear font-bold">${rrTxt}</span>
           </div>
         </div>
       `;
     }).join('');
 
     if (totalOiEl) {
-      totalOiEl.textContent = `-${(top8.length * 1540.8).toFixed(2)} LAKHS`;
+      totalOiEl.textContent = `${top8.length}`;
     }
   }
 
   // 6. Render Footer Telemetry
   function renderFooterTelemetry(data) {
     const stocks = state.stockList;
-    let netDelta = 0;
+    let chgSum = 0, adv = 0, dec = 0;
+    let priced = 0;
     stocks.forEach(s => {
-      netDelta += (s.change_pct || 0) * (s.volume || 1000) * 0.001;
+      const c = s.change_pct ?? s.open_change_pct;
+      if (c === null || c === undefined) return;
+      priced++;
+      chgSum += c;
+      if (c >= 0) adv++; else dec++;
     });
+    const avgChg = priced ? chgSum / priced : 0;
 
     const deltaEl = document.getElementById('footerAggregateDelta');
     const pcrEl = document.getElementById('footerPcrRatio');
     const countEl = document.getElementById('footerTrackedCount');
 
     if (deltaEl) {
-      const isPos = netDelta >= 0;
+      const isPos = avgChg >= 0;
       deltaEl.className = `${isPos ? 'text-bull' : 'text-bear'} font-bold`;
-      deltaEl.textContent = `${isPos ? '+' : ''}${netDelta.toFixed(2)} LAKHS`;
+      deltaEl.textContent = `${isPos ? '+' : ''}${avgChg.toFixed(2)}%`;
     }
     if (pcrEl) {
-      pcrEl.textContent = '1.28 (BULLISH ACCUMULATION)';
+      pcrEl.textContent = `ADV ${adv} / DEC ${dec}`;
     }
     if (countEl) {
       countEl.textContent = `${stocks.length} Active Instruments`;
@@ -1152,19 +1067,20 @@
     chgEl.className = `text-xs font-bold ${isPos ? 'text-bull' : 'text-bear'}`;
     chgEl.textContent = `${isPos ? '+' : ''}${chg.toFixed(2)}%`;
 
-    const score = s.metrics?.score || s.score || 75;
-    document.getElementById('modalScoreVal').textContent = score;
+    const modalScore = s.metrics?.score;
+    document.getElementById('modalScoreVal').textContent = (modalScore !== null && modalScore !== undefined) ? modalScore : 'N/A';
 
     document.getElementById('modalVwap').textContent = s.vwap ? `₹${s.vwap.toFixed(2)}` : '---';
-    document.getElementById('modalRsi').textContent = s.metrics?.raw?.rsi?.toFixed(1) || '54.2';
-    document.getElementById('modalRvol').textContent = `${(s.rvol || 1).toFixed(2)}x`;
+    document.getElementById('modalRsi').textContent = s.metrics?.raw?.rsi?.toFixed(1) || '--';
+    document.getElementById('modalRvol').textContent = (typeof s.rvol === 'number') ? `${s.rvol.toFixed(2)}x` : '--';
     document.getElementById('modalRange').textContent = `${s.day_low?.toFixed(0) || '---'} - ${s.day_high?.toFixed(0) || '---'}`;
 
-    const action = s.ai_decision?.action || (score >= 50 ? 'BREAKOUT LONG' : 'DISTRIBUTION SHORT');
-    document.getElementById('modalAction').textContent = action;
-    document.getElementById('modalSl').textContent = s.ai_decision?.stop_loss ? `₹${s.ai_decision.stop_loss.toFixed(2)}` : `₹${(s.price * 0.985).toFixed(2)}`;
-    document.getElementById('modalT1').textContent = s.ai_decision?.target1 ? `₹${s.ai_decision.target1.toFixed(2)}` : `₹${(s.price * 1.025).toFixed(2)}`;
-    document.getElementById('modalRr').textContent = s.ai_decision?.risk_reward ? `1 : ${s.ai_decision.risk_reward.toFixed(1)}` : '1 : 2.5';
+    const modalAction = s.ai_decision?.action || '--';
+    const modalTradable = actionable(s.ai_decision);
+    document.getElementById('modalAction').textContent = modalAction;
+    document.getElementById('modalSl').textContent = modalTradable && s.ai_decision?.stop_loss ? `₹${s.ai_decision.stop_loss.toFixed(2)}` : '--';
+    document.getElementById('modalT1').textContent = modalTradable && s.ai_decision?.target_1 ? `₹${s.ai_decision.target_1.toFixed(2)}` : '--';
+    document.getElementById('modalRr').textContent = s.ai_decision?.risk_reward_ratio ? `1 : ${s.ai_decision.risk_reward_ratio}` : '--';
 
     // Populate Order Blocks table
     const obList = document.getElementById('modalObList');
@@ -1276,10 +1192,9 @@
     const stocks = state.stockList;
     if (stocks.length === 0) return;
 
-    let csv = "Symbol,Name,Sector,Price,Change_Pct,Score,Action,VWAP,RVOL,Support,Resistance,OrderBlocksCount
-";
+    let csv = "Symbol,Name,Sector,Price,Change_Pct,Score,Action,VWAP,RVOL,Support,Resistance,OrderBlocksCount\n";
     stocks.forEach(s => {
-      csv += `"${s.symbol}","${s.name || ''}","${s.sector || ''}",${s.price || 0},${s.change_pct || 0},${s.metrics?.score || 0},"${s.ai_decision?.action || ''}",${s.vwap || 0},${s.rvol || 0},${s.support || 0},${s.resistance || 0},${(s.order_blocks || []).length}
+      csv += `"${s.symbol}","${s.name || ''}","${s.sector || ''}",${s.price || 0},${s.change_pct ?? ''},${s.metrics?.score || 0},"${s.ai_decision?.action || ''}",${s.vwap || 0},${s.rvol || 0},${s.support || 0},${s.resistance || 0},${(s.order_blocks || []).length}
 `;
     });
 
@@ -1303,8 +1218,9 @@
   document.getElementById('snapTerminalBtn').onclick = () => {
     const now = new Date();
     const stocks = state.stockList;
-    const bullCount = stocks.filter(s => (s.change_pct || 0) >= 0).length;
-    const bearCount = stocks.length - bullCount;
+    const priced = stocks.filter(s => (s.change_pct ?? s.open_change_pct) !== null && (s.change_pct ?? s.open_change_pct) !== undefined);
+    const bullCount = priced.filter(s => (s.change_pct ?? s.open_change_pct) >= 0).length;
+    const bearCount = priced.length - bullCount;
 
     let report = `================================================================================
 `;
@@ -1314,31 +1230,31 @@
 `;
     report += `Timeframe: ${state.timeframe}M | Tracked Instruments: ${stocks.length}
 `;
-    report += `Market Breadth: ${bullCount} Advances (${Math.round((bullCount/stocks.length)*100)}%) / ${bearCount} Declines (${Math.round((bearCount/stocks.length)*100)}%)
+    report += `Market Breadth: ${bullCount} Advances / ${bearCount} Declines (of ${priced.length} priced instruments)
 `;
     report += `================================================================================
 
 `;
 
-    report += `[TOP QUANTITATIVE ORDER BLOCK BREAKOUTS (LONG ACCUMULATION)]
+    report += `[TOP LONGS BY COMPOSITE SCORE (score >= 60; empty when no scored signals)]
 `;
     const topLongs = [...stocks].filter(s => s.metrics?.score >= 60).sort((a,b) => b.metrics.score - a.metrics.score).slice(0, 5);
     topLongs.forEach((s, idx) => {
-      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (+${s.change_pct}%)  Score: ${s.metrics?.score}/100  VWAP: ₹${s.vwap?.toFixed(1)}  RVOL: ${s.rvol?.toFixed(1)}x
+      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (${(s.change_pct ?? s.open_change_pct ?? 0).toFixed(2)}%)  Score: ${s.metrics?.score ?? 'N/A'}/100  VWAP: ₹${s.vwap?.toFixed(1)}  RVOL: ${s.rvol?.toFixed(1)}x
 `;
       if (s.order_blocks?.length > 0) {
         const ob = s.order_blocks[s.order_blocks.length-1];
-        report += `     OB Zone: [₹${ob.low.toFixed(1)} - ₹${ob.high.toFixed(1)}] | Confirmed Breakout: #${ob.breakout_index || 'Active'}
+        report += `     Active OB Zone: [₹${ob.low.toFixed(1)} - ₹${ob.high.toFixed(1)}]
 `;
       }
     });
 
     report += `
-[TOP DISTRIBUTION & SHORT SETUPS (SUPPLY OVERHANG)]
+[TOP SHORTS BY COMPOSITE SCORE (score < 50; empty when no scored signals)]
 `;
-    const topShorts = [...stocks].filter(s => (s.metrics?.score || 50) < 50).sort((a,b) => a.metrics.score - b.metrics.score).slice(0, 5);
+    const topShorts = [...stocks].filter(s => s.metrics?.score !== null && s.metrics?.score !== undefined && s.metrics.score < 50).sort((a,b) => a.metrics.score - b.metrics.score).slice(0, 5);
     topShorts.forEach((s, idx) => {
-      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (${s.change_pct}%)  Score: ${s.metrics?.score}/100  Res: ₹${s.resistance?.toFixed(1)}
+      report += `  ${idx+1}. ${s.symbol.padEnd(12)} ₹${s.price.toFixed(2).padStart(8)}  (${(s.change_pct ?? s.open_change_pct ?? 0).toFixed(2)}%)  Score: ${s.metrics?.score ?? 'N/A'}/100  Res: ₹${s.resistance?.toFixed(1)}
 `;
     });
 
@@ -1374,7 +1290,52 @@
 
   // Initial fetch and start continuous polling
   fetchMarketData();
-  setInterval(fetchMarketData, 2500);
+  async function fetchFlowTrajectories() {
+    try {
+      const resp = await fetch('/api/flow');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      drawTrajectories(data);
+    } catch (e) { /* keep last frame */ }
+  }
+
+  function drawTrajectories(data) {
+    const canvas = document.getElementById('trajCanvas');
+    if (!canvas || !data || !data.stocks) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    ctx.clearRect(0, 0, w, h);
+    const scale = 3.0; // matches printed axis (+/- 3%)
+    const zeroY = h / 2;
+    const yOf = v => zeroY - (Math.max(-scale, Math.min(scale, v)) / scale) * (h / 2 - 16);
+    ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, zeroY); ctx.lineTo(w, zeroY); ctx.stroke();
+    ctx.setLineDash([]);
+    const bars = (data.bars && data.bars.length) || 75;
+    const xStep = w / Math.max(1, bars - 1);
+    Object.values(data.stocks).forEach(st => {
+      const arr = st.pct || [];
+      if (arr.length < 2) return;
+      const last = [...arr].reverse().find(v => v !== null && v !== undefined);
+      if (last === undefined) return;
+      ctx.strokeStyle = last >= 0 ? 'rgba(0,255,136,0.75)' : 'rgba(255,23,68,0.75)';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      let pen = false;
+      arr.forEach((v, i) => {
+        if (v === null || v === undefined) { pen = false; return; }
+        const px = i * xStep, py = yOf(v);
+        if (!pen) { ctx.moveTo(px, py); pen = true; } else { ctx.lineTo(px, py); }
+      });
+      ctx.stroke();
+    });
+  }
+
+  fetchFlowTrajectories();
+  setInterval(fetchMarketData, 5000);
 
 })();
 </script>

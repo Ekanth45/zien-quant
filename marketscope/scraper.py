@@ -255,7 +255,10 @@ class RealTimeScraperFeed:
                         raise ValueError("No valid candlestick data available for ticker")
 
                     real_price = float(meta.get("regularMarketPrice") or candles[-1]["c"])
-                    real_prev = float(meta.get("chartPreviousClose") or meta.get("previousClose") or candles[0]["o"])
+                    prev_meta = meta.get("chartPreviousClose") or meta.get("previousClose")
+                    # Never fall back to the session open here: a missing previous
+                    # close must stay None so day change is marked unavailable.
+                    real_prev = float(prev_meta) if prev_meta is not None else None
                     real_high = float(meta.get("regularMarketDayHigh") or max(c["h"] for c in candles))
                     real_low = float(meta.get("regularMarketDayLow") or min(c["l"] for c in candles))
 
@@ -390,10 +393,17 @@ class RealTimeScraperFeed:
 
         closes = [float(c.get("c", c.get("close", 0.0))) for c in candles]
         current_price = raw_data["price"]
-        prev_close = raw_data.get("previous_close") or (closes[0] if closes else current_price)
+        # Only a real prior close counts; never pose the first session candle as "previous close".
+        prev_close = raw_data.get("previous_close")
         session_open = candles[0].get("o", candles[0].get("open", current_price)) if candles else current_price
 
-        change_pct = round(((current_price - prev_close) / max(0.01, prev_close)) * 100, 2)
+        if prev_close:
+            change_pct = round(((current_price - prev_close) / max(0.01, prev_close)) * 100, 2)
+            change_basis = "prev_close"
+        else:
+            prev_close = None
+            change_pct = None
+            change_basis = "unavailable"
         open_change_pct = round(((current_price - session_open) / max(0.01, session_open)) * 100, 2)
         volume = sum(c.get("v", c.get("volume", 0)) for c in candles)
 
@@ -461,6 +471,7 @@ class RealTimeScraperFeed:
             "previous_close": prev_close,
             "session_open": session_open,
             "change_pct": change_pct,
+            "change_basis": change_basis,
             "open_change_pct": open_change_pct,
             "day_high": day_high,
             "day_low": day_low,
