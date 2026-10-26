@@ -942,8 +942,10 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self._send_json(analysis)
 
     def _handle_ai_chat(self) -> None:
+        client_ip = self.client_address[0] if hasattr(self, "client_address") and self.client_address else "127.0.0.1"
+        is_local = client_ip in ("127.0.0.1", "::1", "localhost")
         session = self._get_current_session()
-        if not session:
+        if not session and not is_local:
             self._send_json({"error": "auth_required", "detail": "Authentication required for AI copilot chat."}, status=401)
             return
 

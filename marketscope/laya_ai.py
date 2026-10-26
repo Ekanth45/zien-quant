@@ -462,7 +462,7 @@ class LayaAIEngine:
             "options": {
                 "num_predict": num_predict,
                 "temperature": temperature,
-                "num_ctx": max(4096, num_ctx),
+                "num_ctx": num_ctx,
             },
         }
         eff_timeout = timeout or self.timeout_sec
@@ -476,6 +476,8 @@ class LayaAIEngine:
             with urllib.request.urlopen(req, timeout=eff_timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 response = data.get("response", "").strip()
+                if not response and data.get("thinking"):
+                    response = data.get("thinking", "").strip()
                 if response:
                     return response
         except urllib.error.HTTPError as http_err:
@@ -492,6 +494,8 @@ class LayaAIEngine:
                     with urllib.request.urlopen(req, timeout=eff_timeout) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         response = data.get("response", "").strip()
+                        if not response and data.get("thinking"):
+                            response = data.get("thinking", "").strip()
                         if response:
                             return response
                 except Exception as fb_err:
@@ -973,7 +977,7 @@ class LayaAIEngine:
             f"Provide a direct, factual technical answer using only the provided context. Keep response concise (under 120 words)."
         )
 
-        llm_output = self._call_ollama(prompt, num_predict=260, temperature=0.2, timeout=90.0, num_ctx=4096)
+        llm_output = self._call_ollama(prompt, num_predict=120, temperature=0.2, timeout=90.0, num_ctx=1536)
         if not llm_output:
             return {
                 "error": "llm_unavailable",
