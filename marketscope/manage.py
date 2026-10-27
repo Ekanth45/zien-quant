@@ -1,6 +1,7 @@
 """
 MarketScope CLI Management Utility
-Commands: init-owner, status, backup, restore, owner-password, reset-mfa, transfer-owner
+Commands: init-owner, reset-mfa, status, backup, candle-stats, doctor,
+check-ollama, import-stock-master.
 """
 
 import argparse
@@ -9,6 +10,8 @@ import os
 import shutil
 import sqlite3
 import sys
+import getpass
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -40,7 +43,7 @@ def get_db() -> DatabaseManager:
 def cmd_init_owner(args: argparse.Namespace) -> None:
     db = get_db()
     if db.has_owner():
-        print("Error: An owner account already exists. Use transfer-owner or reset-mfa.", file=sys.stderr)
+        print("Error: An owner account already exists. For a lost authenticator, use reset-mfa with the existing owner password.", file=sys.stderr)
         sys.exit(1)
 
     email = getattr(args, "email", None)
@@ -98,7 +101,57 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(f"Users Count:     {user_count}")
     print(f"Owner:           {owner['email'] if owner else 'None configured'}")
     print(f"Active Sessions: {session_count}")
-    print(f"Config Versions: {config_versions}")
+
+
+def cmd_reset_mfa(args: argparse.Namespace) -> None:
+    """Password-verified local recovery; secrets stay in the user's terminal."""
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        print("Error: reset-mfa requires an interactive local terminal. No authenticator was changed.", file=sys.stderr)
+        raise SystemExit(1)
+    db_path = Path(getattr(args, "db", None) or DEFAULT_DB_PATH).resolve()
+    if not db_path.is_file():
+        print("Error: Owner database does not exist. No account was changed.", file=sys.stderr)
+        raise SystemExit(1)
+    db = DatabaseManager(str(db_path))
+    with db.get_connection() as conn:
+        owner = conn.execute("SELECT id,email,password_hash FROM users WHERE role='owner' AND disabled=0").fetchone()
+    if not owner or not verify_password(getpass.getpass("Current owner password: "), owner["password_hash"]):
+        print("Error: Owner credentials were not verified. No authenticator was changed.", file=sys.stderr)
+        raise SystemExit(1)
+    print("This replaces the owner authenticator and signs out all existing sessions.")
+    if input("Type RESET to continue, or press Enter to cancel: ").strip() != "RESET":
+        print("Cancelled. No authenticator was changed.")
+        return
+    secret = generate_totp_secret()
+    label = urllib.parse.quote("Zien Quant:" + owner["email"], safe="")
+    uri = f"otpauth://totp/{label}?secret={secret}&issuer=Zien%20Quant&digits=6&period=30"
+    print("Add this new account to your authenticator app before continuing.")
+    print(f"Account: {owner['email']}")
+    print(f"Setup key: {secret}")
+    print(f"Enrollment URI: {uri}")
+    accepted_step = None
+    for _ in range(3):
+        code = getpass.getpass("New authenticator's six-digit code (hidden): ")
+        valid, step = verify_totp(secret, code)
+        if valid:
+            accepted_step = step
+            break
+        print("Code did not match. Check the new authenticator account and device time.")
+    if accepted_step is None:
+        print("Error: New authenticator was not verified. Existing enrollment remains unchanged.", file=sys.stderr)
+        raise SystemExit(1)
+    with db.get_connection() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT password_hash,disabled FROM users WHERE id=?", (owner["id"],)).fetchone()
+        if not row or row["disabled"] or row["password_hash"] != owner["password_hash"]:
+            print("Error: Account changed during enrollment. No authenticator was changed.", file=sys.stderr)
+            raise SystemExit(1)
+        conn.execute("UPDATE users SET totp_secret=?,totp_last_step=?,updated_at=? WHERE id=?",
+                     (secret,accepted_step,datetime.now(timezone.utc).isoformat(),owner["id"]))
+        conn.execute("DELETE FROM sessions WHERE user_id=?", (owner["id"],))
+        conn.execute("DELETE FROM recovery_codes WHERE user_id=?", (owner["id"],))
+        db.log_audit(conn,"owner_mfa_reenrolled",owner["email"],"Password-verified local re-enrollment; previous sessions revoked")
+    print("Authenticator replaced successfully. Wait for a fresh code, then sign in to the dashboard.")
 
 
 def cmd_backup(args: argparse.Namespace) -> None:
@@ -337,6 +390,8 @@ def main() -> None:
     init_parser = subparsers.add_parser("init-owner", help="Initialize the single owner account")
     init_parser.add_argument("--email", help="Owner email address")
     init_parser.add_argument("--password", help="Owner password")
+    recovery_parser = subparsers.add_parser("reset-mfa", help="Interactively replace a lost owner authenticator using the current password")
+    recovery_parser.add_argument("--db", help="Optional path to the existing owner database")
     subparsers.add_parser("status", help="Show database and account status")
     subparsers.add_parser("backup", help="Create an ACID-safe SQLite database backup")
     subparsers.add_parser("candle-stats", help="Show candle archive row counts and date ranges")
@@ -349,6 +404,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "init-owner":
         cmd_init_owner(args)
+    elif args.command == "reset-mfa":
+        cmd_reset_mfa(args)
     elif args.command == "status":
         cmd_status(args)
     elif args.command == "backup":

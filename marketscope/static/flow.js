@@ -8,10 +8,12 @@
 let flowData = null;
 let pinnedSymbol = null;
 let hoveredSymbol = null;
-let currentTimeframe = 1;
+const currentTimeframe = 5;
+let selectedSession = "auto";
 let sessionState = "PREVIOUS";
 let sessionDate = "";
 let pollTimer = null;
+let flowRequestSequence = 0;
 let isTabVisible = true;
 
 // DOM references
@@ -47,21 +49,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const mockFeed = urlParams.get("feed");
   const mockDrawer = urlParams.get("drawer");
   const mockPin = urlParams.get("pin");
-  const mockLive = urlParams.get("mode");
 
   if (mockFeed === "down") {
     renderFeedDownState();
   } else {
     fetchFlowData("auto").then(() => {
-      if (mockLive === "live_fixture") {
-        sessionState = "LIVE";
-        const stateChip = document.getElementById("sessionStateChip");
-        const stateLabel = document.getElementById("sessionStateLabel");
-        if (stateChip && stateLabel) {
-          stateChip.className = "state-chip live";
-          stateLabel.textContent = "LIVE [TEST FIXTURE]";
-        }
-      }
       if (mockPin) {
         setTimeout(() => {
           pinStock(mockPin);
@@ -122,13 +114,18 @@ function initEventListeners() {
     }
   });
 
-  // Timeframe buttons
+  // The flow payload has fixed five-minute alignment. Other intervals belong
+  // to the workspace chart; do not display nonfunctional interval controls.
   document.querySelectorAll(".tf-btn").forEach(btn => {
+    if (Number(btn.dataset.tf) !== currentTimeframe) {
+      btn.remove();
+      return;
+    }
+    btn.classList.add("active");
+    btn.setAttribute("aria-pressed", "true");
+    btn.title = "Flow River uses five-minute candles";
     btn.addEventListener("click", (e) => {
-      document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentTimeframe = parseInt(btn.dataset.tf || "5", 10);
-      fetchFlowData("auto");
+      fetchFlowData(selectedSession);
     });
   });
 
@@ -136,7 +133,7 @@ function initEventListeners() {
   const prevToggleBtn = document.getElementById("prevSessionToggleBtn");
   if (prevToggleBtn) {
     prevToggleBtn.addEventListener("click", () => {
-      fetchFlowData("previous");
+      fetchFlowData(selectedSession === "previous" ? "auto" : "previous");
     });
   }
 
@@ -208,9 +205,13 @@ function debounce(fn, ms) {
 
 // Data Fetching
 async function fetchFlowData(sessionParam = "auto") {
+  selectedSession = sessionParam;
+  const requestSequence = ++flowRequestSequence;
+  if (sessionParam === "previous") stopLivePolling();
   try {
     const url = `/api/flow?session=${encodeURIComponent(sessionParam)}&timeframe=${currentTimeframe}`;
     const res = await fetch(url, { credentials: "same-origin" });
+    if (requestSequence !== flowRequestSequence) return;
     if (!res.ok) {
       if (res.status === 503) {
         renderFeedDownState();
@@ -219,6 +220,7 @@ async function fetchFlowData(sessionParam = "auto") {
       throw new Error(`HTTP ${res.status}`);
     }
     const data = await res.json();
+    if (requestSequence !== flowRequestSequence) return;
     flowData = data;
     sessionState = data.session_state || "PREVIOUS";
     sessionDate = data.session_date || "";
@@ -232,14 +234,16 @@ async function fetchFlowData(sessionParam = "auto") {
       stopLivePolling();
     }
   } catch (err) {
+    if (requestSequence !== flowRequestSequence) return;
     console.error("Error loading flow data:", err);
+    renderFeedDownState();
   }
 }
 
 function startLivePolling() {
   stopLivePolling();
   pollTimer = setInterval(() => {
-    if (isTabVisible && sessionState === "LIVE") {
+    if (isTabVisible && sessionState === "LIVE" && selectedSession === "auto") {
       fetchFlowData("auto");
     }
   }, 5000);
@@ -271,7 +275,7 @@ function updateTopBarAndBanner() {
   if (feedChip) {
     const ok = flowData.feed?.ok_count || 0;
     const failed = flowData.feed?.failed_count || 0;
-    feedChip.textContent = failed === 0 ? "FEED: LIVE" : (ok > 0 ? "FEED: DEGRADED" : "FEED: DOWN");
+    feedChip.textContent = ok === 0 ? "FEED: DOWN" : sessionState !== "LIVE" ? (failed ? "ARCHIVE: PARTIAL" : "SESSION ARCHIVE") : failed === 0 ? "PUBLIC CANDLES" : "FEED: DEGRADED";
     feedChip.className = "feed-chip " + (failed === 0 ? "ok" : "down");
   }
 
@@ -288,7 +292,9 @@ function updateTopBarAndBanner() {
   }
 
   if (prevToggle) {
-    prevToggle.style.display = (sessionState === "LIVE") ? "inline-flex" : "none";
+    prevToggle.style.display = "inline-flex";
+    prevToggle.textContent = selectedSession === "previous" ? "Return to auto session" : "Previous session";
+    prevToggle.setAttribute("aria-pressed", String(selectedSession === "previous"));
   }
 }
 
@@ -316,8 +322,25 @@ function renderEmptyState() {
 }
 
 function renderFeedDownState() {
+  flowData = null;
+  sessionState = "UNAVAILABLE";
+  stopLivePolling();
+  for (const [canvas, context] of [[riverBaseCanvas, riverBaseCtx], [riverHighlightCanvas, riverHighlightCtx], [distCanvas, distCtx]]) {
+    if (canvas && context) {
+      const rect = canvas.getBoundingClientRect();
+      context.clearRect(0, 0, rect.width, rect.height);
+    }
+  }
+  const stateLabel = document.getElementById("sessionStateLabel");
+  const feedChip = document.getElementById("feedStatusChip");
+  if (stateLabel) stateLabel.textContent = "UNAVAILABLE";
+  if (feedChip) {
+    feedChip.textContent = "FEED: DOWN";
+    feedChip.className = "feed-chip down";
+  }
   const funnelBody = document.getElementById("funnelGridBody");
   const cardsPanel = document.getElementById("cardsPanel");
+  if (cardsPanel) cardsPanel.innerHTML = '<div class="cards-empty-state">Received data is unavailable. Retry the session before reviewing setups.</div>';
   if (funnelBody) {
     funnelBody.innerHTML = `
       <div class="stage-empty-msg" style="grid-column: span 4; color: var(--pink-red);">
@@ -1083,7 +1106,11 @@ async function loadRecapPanel() {
   container.innerHTML = `<div style="color: var(--text-muted); padding: 12px;">Loading session recap...</div>`;
 
   try {
-    const targetDate = flowData?.session_date || "2026-10-23";
+    const targetDate = flowData?.session_date;
+    if (!targetDate) {
+      container.textContent = "No received session is selected. Load a session before opening its recap.";
+      return;
+    }
     const res = await fetch(`/api/session/summary?date=${encodeURIComponent(targetDate)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -1125,6 +1152,14 @@ async function loadLayaPanel(symbol) {
 
   drawer.classList.add("open");
   if (titleEl) titleEl.textContent = symbol;
+  if (sessionState !== "LIVE") {
+    const stock = flowData?.stocks?.[symbol];
+    const summary = stock
+      ? `${symbol} · ${flowData.session_date} · received five-minute session. Directional score ${stock.score ?? "unavailable"}/100. ${stock.action || "No qualifying setup"}. RSI ${stock.rsi ?? "unavailable"}, relative volume ${stock.rvol ?? "unavailable"}. This is a deterministic explanation of the selected historical observation.`
+      : "No received stock observation is available for the selected session.";
+    contentEl.innerHTML = `<div style="padding:12px;line-height:1.7"><strong>SELECTED SESSION · RULES</strong><p>${escapeHtml(summary)}</p></div>`;
+    return;
+  }
   contentEl.innerHTML = `
     <div style="color: var(--text-muted); font-size: 11px; padding: 12px;">
       <span class="pulse-dot" style="display: inline-block; background: var(--ref-blue); margin-right: 6px;"></span>
@@ -1145,7 +1180,7 @@ async function loadLayaPanel(symbol) {
             ${escapeHtml(data.source || "rules_engine")}
           </span>
         </div>
-        <div style="line-height: 1.6; color: var(--text-primary); white-space: pre-wrap;">${escapeHtml(data.summary || data.analysis || "No analysis available.")}</div>
+        <div style="line-height: 1.6; color: var(--text-primary); white-space: pre-wrap;">${escapeHtml(data.institutional_briefing || data.summary || data.analysis || "No analysis available.")}</div>
       </div>
     `;
   } catch (e) {

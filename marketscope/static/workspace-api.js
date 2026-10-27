@@ -227,7 +227,7 @@ export function toBackendConfig(patch = {}) {
 
 const SUPPORTED_ROUTES = new Set(['/api/bootstrap', '/api/market', '/api/stock', '/api/historical/symbols', '/api/historical/candles', '/api/health', '/api/admin', '/api/admin/audit-logs', '/api/config/history', '/api/config/preview', '/api/session/preview', '/api/config', '/api/backup/status', '/api/backup', '/api/ai/status', '/api/ai/pulse', '/api/ai/analyze', '/api/ai/chat', '/api/stocks/database', '/api/stocks/quote', '/api/stocks/track', '/api/stocks/untrack', '/api/market/schedule', '/api/signals/stats', '/api/session/summary', '/api/flow', '/api/login', '/api/logout', '/api/metrics']);
 
-export function createWorkspaceAPI(getState = () => ({}), { fetchImpl = globalThis.fetch } = {}) {
+export function createWorkspaceAPI(getState = () => ({}), { fetchImpl = globalThis.fetch, onUnauthorized = () => {} } = {}) {
   return async function request(path, { method = 'GET', body, signal } = {}) {
     const state = getState() || {};
     const url = new URL(path, 'http://workspace.local');
@@ -255,6 +255,7 @@ export function createWorkspaceAPI(getState = () => ({}), { fetchImpl = globalTh
     let data;
     try { data = await response.json(); } catch { throw new Error('The server returned an unreadable response.'); }
     if (!response.ok) {
+      if (response.status === 401 && url.pathname !== '/api/login') onUnauthorized();
       const error = new Error(data.detail ?? data.error ?? `Request failed (${response.status})`);
       error.status = response.status;
       error.code = data.error;

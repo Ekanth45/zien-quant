@@ -13,6 +13,7 @@ import os
 import secrets
 import sqlite3
 import struct
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -72,15 +73,21 @@ def verify_totp(secret: str, code: str, last_step: int = 0) -> Tuple[bool, int]:
     Verify TOTP token allowing current, previous, and next step (+-1 window).
     Enforces replay protection by rejecting steps <= last_step.
     """
-    if not secret or not code or len(code) != 6:
+    if not isinstance(code, str):
+        return False, last_step
+    code = code.strip()
+    if not secret or len(code) != 6 or not code.isascii() or not code.isdigit():
         return False, last_step
 
     current_step = int(time.time() // 30)
     for step in (current_step, current_step - 1, current_step + 1):
         if step <= last_step:
             continue
-        token, _ = get_totp_token(secret, time_step=step)
-        if hmac.compare_digest(token, code.strip()):
+        try:
+            token, _ = get_totp_token(secret, time_step=step)
+        except (ValueError, TypeError):
+            return False, last_step
+        if hmac.compare_digest(token, code):
             return True, step
     return False, last_step
 
@@ -97,22 +104,25 @@ class RateLimiter:
         self.limit = limit
         self.window_sec = window_sec
         self.history: Dict[str, List[float]] = {}
+        self._lock = threading.Lock()
 
     def is_allowed(self, key: str) -> bool:
         now = time.time()
         cutoff = now - self.window_sec
-        entries = [t for t in self.history.get(key, []) if t > cutoff]
-        if len(entries) >= self.limit:
+        with self._lock:
+            entries = [t for t in self.history.get(key, []) if t > cutoff]
+            if len(entries) >= self.limit:
+                self.history[key] = entries
+                return False
+            entries.append(now)
             self.history[key] = entries
-            return False
-        entries.append(now)
-        self.history[key] = entries
         return True
 
     def retry_after(self, key: str) -> int:
         now = time.time()
         cutoff = now - self.window_sec
-        entries = [t for t in self.history.get(key, []) if t > cutoff]
+        with self._lock:
+            entries = [t for t in self.history.get(key, []) if t > cutoff]
         if not entries:
             return 1
         return max(1, int(entries[0] + self.window_sec - now) + 1)
@@ -254,6 +264,29 @@ class DatabaseManager:
         try:
             with conn:
                 conn.execute("DELETE FROM sessions WHERE token_hash = ?", (token_h,))
+        finally:
+            conn.close()
+
+    def create_authenticated_session(self, user_id: int, mfa_step: Optional[int] = None) -> Optional[Tuple[str, str]]:
+        """Atomically consume an authenticator step and issue its session."""
+        raw_token, csrf_token = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
+        now = datetime.now(timezone.utc)
+        conn = self.get_connection()
+        try:
+            with conn:
+                conn.execute("BEGIN IMMEDIATE")
+                row = conn.execute("SELECT disabled,totp_secret,totp_last_step FROM users WHERE id = ?", (user_id,)).fetchone()
+                if not row or row["disabled"]:
+                    return None
+                if row["totp_secret"]:
+                    if mfa_step is None or mfa_step <= (row["totp_last_step"] or 0):
+                        return None
+                    conn.execute("UPDATE users SET totp_last_step = ? WHERE id = ?", (mfa_step, user_id))
+                conn.execute(
+                    "INSERT INTO sessions(token_hash,user_id,csrf_token,created_at,expires_at) VALUES(?,?,?,?,?)",
+                    (hash_token(raw_token),user_id,csrf_token,now.isoformat(),(now+timedelta(hours=SESSION_LIFETIME_HOURS)).isoformat()),
+                )
+            return raw_token, csrf_token
         finally:
             conn.close()
 

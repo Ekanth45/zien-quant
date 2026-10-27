@@ -10,15 +10,18 @@ import csv
 import io
 import json
 import gzip
+import hmac
 import logging
 import mimetypes
 import os
 import re
 import shutil
+import sqlite3
 import sys
 import time
 import urllib.parse
 from datetime import datetime, timezone
+from contextlib import closing
 from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -27,6 +30,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 logger = logging.getLogger("marketscope")
+try:
+    APP_VERSION = json.loads((Path(__file__).resolve().parent.parent / "package.json").read_text(encoding="utf-8"))["version"]
+except (OSError, ValueError, KeyError):
+    APP_VERSION = "unknown"
 
 # Ensure package import resolution
 sys.path.insert(0, str(Path(__file__).parent))
@@ -46,6 +53,7 @@ from stock_database import (
 )
 from market_schedule import (
     get_market_schedule_info,
+    IST,
 )
 from laya_ai import (
     get_laya_engine,
@@ -76,6 +84,7 @@ from session_manager import (
     build_session_snapshot,
     get_session_scorecard,
     enrich_daily_rankings,
+    resolve_previous_session_date,
 )
 
 BASE_DIR = Path(__file__).parent
@@ -91,12 +100,13 @@ rate_limiter_llm = RateLimiter(limit=6, window_sec=60)
 rate_limiter_llm_auth = RateLimiter(limit=60, window_sec=60)
 rate_limiter_track = RateLimiter(limit=10, window_sec=60)
 rate_limiter_export = RateLimiter(limit=5, window_sec=60)
+rate_limiter_login = RateLimiter(limit=12, window_sec=60)
 rate_limiter_history = RateLimiter(limit=8, window_sec=60)
 server_start_time = time.time()
 
 
 class MarketScopeHandler(BaseHTTPRequestHandler):
-    server_version = "MarketScope/2.0"
+    server_version = f"MarketScope/{APP_VERSION}"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -106,11 +116,23 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self.db: DatabaseManager = getattr(self.server, "db_manager", None) or DatabaseManager(DEFAULT_DB_PATH)
         self.signal_journal: SignalJournal = getattr(self.server, "signal_journal", None) or SignalJournal(self.db)
 
+    def _drain_request_body(self) -> None:
+        if not hasattr(self, "_cached_json_body"):
+            try:
+                length = int(self.headers.get("Content-Length", 0)) if hasattr(self, "headers") and self.headers else 0
+                if 0 < length <= 65536 and hasattr(self, "rfile") and self.rfile:
+                    self.rfile.read(length)
+                self._cached_json_body = None
+            except Exception:
+                pass
+
     def _send_json(self, data: Any, status: int = 200, cookies: Optional[List[str]] = None) -> None:
+        self._drain_request_body()
         raw = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
         self._add_security_headers()
         if cookies:
             for c in cookies:
@@ -119,6 +141,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def _send_text(self, text: str, content_type: str = "text/plain; charset=utf-8", status: int = 200) -> None:
+        self._drain_request_body()
         raw = text.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -137,6 +160,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         )
 
     def _send_rate_limited(self, retry_after: int = 60, detail: str = "Rate limit exceeded.") -> None:
+        self._drain_request_body()
         payload = json.dumps({
             "error": "rate_limit_exceeded",
             "detail": detail,
@@ -172,13 +196,19 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         return self.db.validate_session(raw_token)
 
     def _parse_json_body(self, max_bytes: int = 65536) -> Optional[Dict[str, Any]]:
+        if hasattr(self, "_cached_json_body") and self._cached_json_body is not None:
+            return self._cached_json_body
         try:
             length = int(self.headers.get("Content-Length", 0))
             if length <= 0 or length > max_bytes:
+                self._cached_json_body = None
                 return None
             body = self.rfile.read(length)
-            return json.loads(body.decode("utf-8"))
+            parsed = json.loads(body.decode("utf-8"))
+            self._cached_json_body = parsed if isinstance(parsed, dict) else None
+            return self._cached_json_body
         except Exception:
+            self._cached_json_body = None
             return None
 
     def do_GET(self) -> None:
@@ -280,11 +310,20 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             self._send_rate_limited(retry_after=rate_limiter.retry_after(client_ip), detail="Global rate limit exceeded.")
             return
 
-        # 4.5 Body size cap 64 KB for every POST; reject larger with 413
+        origin = self.headers.get("Origin")
+        if origin:
+            parsed_origin = urllib.parse.urlsplit(origin)
+            if parsed_origin.scheme not in ("http", "https") or parsed_origin.netloc.lower() != self.headers.get("Host", "").lower():
+                self._send_json({"error": "cross_origin_request", "detail": "Use the same dashboard address to sign in and submit changes."}, status=403)
+                return
+
+        # Body size cap 64 KB for every POST.
         content_length_header = self.headers.get("Content-Length")
         if content_length_header:
             try:
                 content_len = int(content_length_header)
+                if content_len < 0:
+                    raise ValueError("Negative content length")
                 if content_len > 65536:
                     self._send_json(
                         {"error": "payload_too_large", "detail": "Request body exceeds maximum size of 64KB."},
@@ -292,10 +331,20 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
                     )
                     return
             except ValueError:
-                pass
+                self._send_json({"error": "invalid_content_length"}, status=400)
+                return
 
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+
+        if path in ("/api/logout", "/api/config", "/api/config/preview", "/api/session/preview", "/api/backup", "/api/stocks/track", "/api/stocks/untrack"):
+            session = self._get_current_session()
+            if session:
+                supplied = self.headers.get("X-CSRF-Token", "")
+                expected = session.get("csrf_token", "")
+                if not supplied or not expected or not hmac.compare_digest(supplied, expected):
+                    self._send_json({"error": "invalid_csrf", "detail": "Your session changed. Refresh the dashboard and try again."}, status=403)
+                    return
 
         if path == "/api/ai/chat":
             if not rate_limiter_llm.is_allowed(client_ip):
@@ -332,7 +381,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
 
     def _serve_static_file(self, filename: str) -> None:
         target = (STATIC_DIR / filename).resolve()
-        if not str(target).startswith(str(STATIC_DIR.resolve())) or not target.exists() or not target.is_file():
+        if not target.is_relative_to(STATIC_DIR.resolve()) or not target.exists() or not target.is_file():
             self._send_json({"error": "File not found"}, status=404)
             return
 
@@ -387,13 +436,13 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             },
             "laya_ai": {
                 "name": "Laya AI Intelligence Suite",
-                "version": "2.0.0",
-                "model": "gemma4:12b (Local Ollama LLM)",
+                "version": APP_VERSION,
+                "model": os.environ.get("OLLAMA_MODEL", "gemma4:12b") + " (Local Ollama LLM)",
                 "capabilities": [
-                    "0ms Algorithmic Decision Engine",
-                    "Deep Institutional Trade Briefing",
-                    "Macro Market Pulse Synthesis",
-                    "Interactive Copilot Chat",
+                    "Deterministic indicator calculations",
+                    "Local model explanations",
+                    "Market snapshot summaries",
+                    "Authenticated research chat",
                 ],
             },
             "market_schedule": get_market_schedule_info(),
@@ -412,8 +461,24 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         session_state = state_info["session_state"]
         session_date = state_info["session_date"]
 
+        requested_date = query.get("date", [""])[0].strip()
+        if requested_date:
+            try:
+                parsed_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
+                if parsed_date.isoformat() != requested_date or parsed_date > datetime.now(IST).date():
+                    raise ValueError("Date is outside the received history")
+            except (ValueError, TypeError):
+                self._send_json({"error": "invalid_date", "detail": "Choose a valid session date no later than today."}, status=400)
+                return
+            session_date = requested_date
+            snap = build_session_snapshot(session_date, timeframe=tf, db_manager=self.db, config=cfg)
+            snap.update(session_state="PREVIOUS", session_date=session_date, data_mode="PREVIOUS_SESSION")
+            self._send_json(snap)
+            return
+
         # 1. If explicit ?session=previous requested, always return the completed previous session
         if session_req == "previous":
+            session_date = resolve_previous_session_date(state_info, get_candle_archive(), self.db)
             prev_snapshot = build_session_snapshot(session_date, timeframe=tf, db_manager=self.db, config=cfg)
             prev_snapshot["session_state"] = "PREVIOUS"
             prev_snapshot["session_date"] = session_date
@@ -655,16 +720,31 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         except ValueError:
             tf = 5
 
-        scraper_feed = get_live_scraper_feed()
-        candles = scraper_feed.get_full_stock_candles(symbol, timeframe=tf, exchange=exchange)
-        if not candles:
-            archive = get_candle_archive()
-            state_info = get_session_state(candle_archive=archive, db_manager=self.db)
+        if tf not in (1, 5, 15, 60):
+            self._send_json({"error": "invalid_timeframe"}, status=400)
+            return
+        archive = get_candle_archive()
+        state_info = get_session_state(candle_archive=archive, db_manager=self.db)
+        requested_date = query.get("date", [""])[0].strip()
+        if requested_date:
+            try:
+                parsed_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
+                if parsed_date.isoformat() != requested_date or parsed_date > datetime.now(IST).date():
+                    raise ValueError("Invalid session date")
+            except (ValueError, TypeError):
+                self._send_json({"error": "invalid_date", "detail": "Choose a valid session date no later than today."}, status=400)
+                return
+            session_date = requested_date
+        elif mode == "previous" or query.get("session", [""])[0] == "previous":
+            session_date = resolve_previous_session_date(state_info, archive, self.db)
+        else:
             session_date = state_info.get("session_date")
-            if session_date:
-                candles = archive.get_candles_for_session(symbol, tf, session_date)
-            if not candles:
-                candles = archive.get_candles_for_session(symbol, tf, archive.get_latest_session_date()) if archive.get_latest_session_date() else []
+        # Read the selected session first. Never substitute a different day's
+        # history when a date was selected in the workspace.
+        candles = archive.get_candles_for_session(symbol, tf, session_date) if session_date else []
+        if not candles or (state_info.get("session_state") == "LIVE" and not requested_date and mode != "previous"):
+            fetched = get_live_scraper_feed().get_full_stock_candles(symbol, timeframe=tf, exchange=exchange)
+            candles = [c for c in fetched if datetime.fromtimestamp(c["t"], IST).date().isoformat() == session_date] or candles
         if not candles:
             self._send_json(
                 {"error": f"Candle data unavailable for symbol {symbol}."},
@@ -682,6 +762,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             "exchange": info.get("exchange", "NSE/BSE"),
             "timeframe": tf,
             "count": len(candles),
+            "session_date": session_date,
             "candles": candles,
         })
 
@@ -690,10 +771,10 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self._send_json({
             "status": "healthy",
             "service": "MarketScope Flow Terminal",
-            "version": "2.0.0",
+            "version": APP_VERSION,
             "uptime_seconds": uptime,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "feed_active": True,
+            "feed_active": get_market_schedule_info().get("is_open", False),
         })
 
     def _handle_admin(self) -> None:
@@ -754,21 +835,40 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             tf = int(query.get("timeframe", ["5"])[0])
         except ValueError:
             tf = 5
+        if tf not in (1, 5, 15, 60):
+            self._send_json({"error": "invalid_timeframe"}, status=400)
+            return
 
         cfg = self.db.get_latest_config() or DEFAULT_CONFIG
+        archive = get_candle_archive()
+        state_info = get_session_state(candle_archive=archive, db_manager=self.db)
+        selected_date = query.get("date", [""])[0].strip()
+        if selected_date:
+            try:
+                parsed_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
+                if parsed_date.isoformat() != selected_date or parsed_date > datetime.now(IST).date():
+                    raise ValueError("Invalid session date")
+            except (ValueError, TypeError):
+                self._send_json({"error": "invalid_date", "detail": "Choose a valid session date no later than today."}, status=400)
+                return
+        elif query.get("session", [""])[0] == "previous":
+            selected_date = resolve_previous_session_date(state_info, archive, self.db)
+        else:
+            selected_date = state_info.get("session_date")
         snapshot = None
-        try:
-            snapshot = get_live_scraper_feed().get_snapshot(timeframe=tf, config=cfg)
-        except Exception:
-            pass
+        if state_info.get("session_state") == "LIVE" and selected_date == state_info.get("session_date"):
+            try:
+                snapshot = get_live_scraper_feed().get_snapshot(timeframe=tf, config=cfg)
+                snapshot.update(session_date=selected_date, data_mode="LIVE")
+            except Exception:
+                pass
         if not snapshot or (snapshot.get("feed", {}).get("ok_count", 0) == 0 and snapshot.get("feed", {}).get("stale_count", 0) == 0):
-            state_info = get_session_state(candle_archive=get_candle_archive(), db_manager=self.db)
-            session_date = state_info.get("session_date")
-            if session_date:
-                snapshot = build_session_snapshot(session_date, timeframe=tf, db_manager=self.db, config=cfg)
+            if selected_date:
+                snapshot = build_session_snapshot(selected_date, timeframe=tf, db_manager=self.db, config=cfg)
         if not snapshot:
-            snapshot = {"stocks": {}}
-        filename = f"marketscope_export_{tf}m.csv"
+            self._send_json({"error": "session_unavailable", "detail": "No market data exists for the selected session."}, status=503)
+            return
+        filename = f"zien_quant_{selected_date}_{tf}m.csv"
 
         stocks = snapshot.get("stocks", {})
 
@@ -777,7 +877,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         writer.writerow([
             "Symbol", "Company", "Sector", "Status", "Price", "SessionOpen", "ChangePct",
             "OpenChangePct", "Volume", "RVOL", "VWAP", "Support", "Resistance",
-            "Score", "Signal", "RSI", "FastEMA", "SlowEMA", "Updated"
+            "Score", "Signal", "RSI", "FastEMA", "SlowEMA", "Updated", "SessionDate", "DataMode"
         ])
 
         for sym, s in stocks.items():
@@ -806,6 +906,8 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
                 raw.get("fast_ema") if is_ok else "",
                 raw.get("slow_ema") if is_ok else "",
                 s.get("updated_at"),
+                selected_date,
+                snapshot.get("data_mode", "PREVIOUS_SESSION"),
             ])
 
         csv_text = output.getvalue()
@@ -844,11 +946,11 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
 
         backup_dir = BASE_DIR.parent / "work" / "backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
         backup_name = f"marketscope_backup_{ts}.db"
         dest_path = backup_dir / backup_name
-        src_path = self.db.db_path
-        shutil.copy2(src_path, dest_path)
+        with closing(sqlite3.connect(self.db.db_path)) as source, closing(sqlite3.connect(str(dest_path))) as destination:
+            source.backup(destination)
         with self.db.get_connection() as conn:
             self.db.log_audit(conn, "create_backup", session.get("email", "owner"), f"Backup created: {backup_name}")
         self._send_json({"status": "success", "backup": backup_name, "path": str(dest_path), "created_at": datetime.now(timezone.utc).isoformat()})
@@ -1136,14 +1238,23 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         self._send_json(stats)
 
     def _handle_login(self) -> None:
+        client_ip = self.client_address[0] if getattr(self, "client_address", None) else "127.0.0.1"
+        if not rate_limiter_login.is_allowed(client_ip):
+            self._send_rate_limited(retry_after=rate_limiter_login.retry_after(client_ip), detail="Too many sign-in attempts. Wait a minute before trying again.")
+            return
         body = self._parse_json_body()
-        if not body:
-            self._send_json({"error": "Invalid request payload"}, status=400)
+        if not isinstance(body, dict):
+            self._send_json({"error": "invalid_login_payload", "detail": "Enter your email and password."}, status=400)
             return
 
-        email = str(body.get("email", "")).strip().lower()
-        password = str(body.get("password", ""))
-        totp_code = str(body.get("totp_code", "")).strip()
+        email, password, totp_code = body.get("email", ""), body.get("password", ""), body.get("totp_code", "")
+        if not all(isinstance(value, str) for value in (email, password, totp_code)):
+            self._send_json({"error": "invalid_login_payload", "detail": "Email, password and authenticator code must be text."}, status=400)
+            return
+        email, totp_code = email.strip().lower(), totp_code.strip()
+        if not email or not password or len(email) > 254 or len(password) > 1024:
+            self._send_json({"error": "invalid_login_payload", "detail": "Enter your email and password."}, status=400)
+            return
 
         with self.db.get_connection() as conn:
             cur = conn.cursor()
@@ -1151,29 +1262,32 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             user = cur.fetchone()
 
         if not user or not verify_password(password, user["password_hash"]):
-            self._send_json({"error": "Invalid email or password credentials"}, status=401)
+            self._send_json({"error": "invalid_credentials", "detail": "Email or password is incorrect."}, status=401)
             return
 
-        # If user has TOTP enabled (mandatory for owner)
+        new_step = None
         if user["totp_secret"]:
             if not totp_code:
-                self._send_json({"error": "Two-factor authentication code (TOTP) is required", "requires_mfa": True}, status=400)
+                self._send_json({"error": "mfa_required", "detail": "Enter the six-digit code from the authenticator enrolled for this account.", "requires_mfa": True}, status=400)
                 return
             valid, new_step = verify_totp(user["totp_secret"], totp_code, last_step=user["totp_last_step"])
             if not valid:
-                self._send_json({"error": "Invalid or expired 2FA TOTP code"}, status=401)
+                self._send_json({"error": "invalid_mfa", "detail": "The authenticator code is invalid, expired or already used. Try a fresh code.", "requires_mfa": True}, status=401)
                 return
-            with self.db.get_connection() as conn:
-                conn.execute("UPDATE users SET totp_last_step = ? WHERE id = ?", (new_step, user["id"]))
-                conn.commit()
 
-        raw_token, csrf_token = self.db.create_session(user["id"])
+        issued = self.db.create_authenticated_session(user["id"], new_step)
+        if not issued:
+            self._send_json({"error": "login_state_changed", "detail": "Account or authenticator state changed. Try a fresh sign-in.", "requires_mfa": bool(user["totp_secret"])}, status=401)
+            return
+        raw_token, csrf_token = issued
         cookie = SimpleCookie()
         cookie["ms_session"] = raw_token
         cookie["ms_session"]["httponly"] = True
         cookie["ms_session"]["samesite"] = "Strict"
         cookie["ms_session"]["path"] = "/"
         cookie["ms_session"]["max-age"] = SESSION_LIFETIME_HOURS * 3600
+        if os.environ.get("MS_COOKIE_SECURE", "").lower() in ("1", "true", "yes"):
+            cookie["ms_session"]["secure"] = True
 
         self._send_json(
             {
@@ -1191,19 +1305,33 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         cookie = SimpleCookie()
         cookie["ms_session"] = ""
         cookie["ms_session"]["httponly"] = True
+        cookie["ms_session"]["samesite"] = "Strict"
         cookie["ms_session"]["path"] = "/"
         cookie["ms_session"]["max-age"] = 0
+        if os.environ.get("MS_COOKIE_SECURE", "").lower() in ("1", "true", "yes"):
+            cookie["ms_session"]["secure"] = True
         self._send_json({"success": True}, cookies=[cookie["ms_session"].OutputString()])
 
     def _handle_config_preview(self) -> None:
+        session = self._get_current_session()
+        if not session:
+            self._send_json({"error": "auth_required", "detail": "Sign in to preview configuration changes."}, status=401)
+            return
+        if session.get("role") != "owner":
+            self._send_json({"error": "forbidden", "detail": "Owner privilege required."}, status=403)
+            return
         body = self._parse_json_body() or {}
-        fast = int(body.get("fast_ema_period", 9))
-        slow = int(body.get("slow_ema_period", 21))
-        rsi = int(body.get("rsi_period", 14))
-        thresh = int(body.get("score_threshold", 65))
+        try:
+            fast = int(body.get("fast_ema_period", 9))
+            slow = int(body.get("slow_ema_period", 21))
+            rsi = int(body.get("rsi_period", 14))
+            thresh = int(body.get("score_threshold", 65))
+        except (ValueError, TypeError, OverflowError):
+            self._send_json({"error": "invalid_config", "detail": "Indicator settings must be whole numbers."}, status=400)
+            return
 
-        if fast >= slow:
-            self._send_json({"error": "Fast EMA period must be strictly less than Slow EMA"}, status=400)
+        if not (0 < fast < slow <= 500 and 1 <= rsi <= 100 and 1 <= thresh <= 100):
+            self._send_json({"error": "invalid_config", "detail": "Choose valid indicator periods with fast EMA below slow EMA."}, status=400)
             return
 
         temp_cfg = dict(DEFAULT_CONFIG)

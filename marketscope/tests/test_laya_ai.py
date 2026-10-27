@@ -3,6 +3,7 @@ Unit Tests for Laya AI Suite and Ollama Integration
 """
 
 import json
+import os
 import unittest
 import sys
 from pathlib import Path
@@ -243,7 +244,8 @@ class TestServerAIEndpoints(unittest.TestCase):
         
         self.assertIn("laya_ai", sent_data)
         self.assertEqual(sent_data["laya_ai"]["name"], "Laya AI Intelligence Suite")
-        self.assertIn("gemma4:12b", sent_data["laya_ai"]["model"])
+        expected_model = os.environ.get("OLLAMA_MODEL", "gemma4:12b")
+        self.assertIn(expected_model, sent_data["laya_ai"]["model"])
 
     def test_ai_status_endpoint(self):
         from server import MarketScopeHandler

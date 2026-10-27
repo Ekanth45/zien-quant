@@ -15,13 +15,13 @@ try:
     from market_schedule import IST
     from market import STOCK_CATALOGUE, DEFAULT_CONFIG
     from candle_archive import CandleArchive, get_candle_archive
-    from session_manager import build_session_snapshot, get_session_state, get_session_scorecard
+    from session_manager import build_session_snapshot, get_session_state, get_session_scorecard, resolve_previous_session_date
     from security import DatabaseManager
 except ImportError:
     from marketscope.market_schedule import IST
     from marketscope.market import STOCK_CATALOGUE, DEFAULT_CONFIG
     from marketscope.candle_archive import CandleArchive, get_candle_archive
-    from marketscope.session_manager import build_session_snapshot, get_session_state, get_session_scorecard
+    from marketscope.session_manager import build_session_snapshot, get_session_state, get_session_scorecard, resolve_previous_session_date
     from marketscope.security import DatabaseManager
 
 logger = logging.getLogger("marketscope.flow_engine")
@@ -156,7 +156,7 @@ def build_flow_payload(
     if session_param == "previous":
         session_state = "PREVIOUS"
         if not date_param:
-            target_date = state_info["session_date"]
+            target_date = resolve_previous_session_date(state_info, archive, db)
 
     # Build or retrieve real session snapshot
     snapshot = build_session_snapshot(
@@ -173,6 +173,7 @@ def build_flow_payload(
         return {
             "session_state": session_state,
             "session_date": target_date,
+            "timeframe": 5,
             "data_mode": "UNAVAILABLE",
             "as_of": "N/A",
             "bars": [],
@@ -508,6 +509,7 @@ def build_flow_payload(
     return {
         "session_state": session_state,
         "session_date": target_date,
+        "timeframe": 5,
         "data_mode": "UNAVAILABLE" if is_empty else data_mode,
         "as_of": as_of,
         "bars": bars,

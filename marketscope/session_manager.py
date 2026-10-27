@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+from contextlib import closing
 from datetime import datetime, date, time as dt_time, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -76,6 +77,52 @@ import os
 DEFAULT_DB_PATH = os.environ.get("MS_DB_PATH", str(Path(__file__).parent.parent / "work" / "runtime" / "marketscope.db"))
 
 logger = logging.getLogger("marketscope.session_manager")
+
+
+def resolve_previous_session_date(
+    state_info: Dict[str, Any], archive: Optional[CandleArchive] = None,
+    db: Optional[DatabaseManager] = None,
+) -> str:
+    """Resolve an explicit previous-session request without relabelling today.
+
+    In a PREVIOUS state the exchange clock already selected a prior date.
+    During LIVE/CLOSED_TODAY, select a real observed date strictly before the
+    active date. Fall back to the prior trading day when no archive exists.
+    """
+    selected = date.fromisoformat(state_info["session_date"])
+    if state_info.get("session_state") == "PREVIOUS":
+        return selected.isoformat()
+    if db is not None:
+        try:
+            with closing(db.get_connection()) as conn:
+                row = conn.execute(
+                    "SELECT max(session_date) FROM session_snapshots WHERE complete = 1 AND session_date < ?",
+                    (selected.isoformat(),),
+                ).fetchone()
+            if row and isinstance(row[0], str):
+                found = date.fromisoformat(row[0])
+                if found < selected:
+                    return found.isoformat()
+        except (sqlite3.Error, OSError, TypeError, ValueError, AttributeError):
+            pass
+    if archive is not None:
+        try:
+            boundary = int(datetime.combine(selected, dt_time.min, IST).timestamp())
+            with closing(archive._get_connection()) as conn:
+                row = conn.execute(
+                    "SELECT max(ts) FROM candles WHERE ts < ? AND ts >= 1704067200",
+                    (boundary,),
+                ).fetchone()
+            if row and isinstance(row[0], (int, float)) and not isinstance(row[0], bool):
+                found = datetime.fromtimestamp(row[0], IST).date()
+                if found < selected:
+                    return found.isoformat()
+        except (sqlite3.Error, OSError, TypeError, ValueError, AttributeError):
+            pass
+    previous = selected - timedelta(days=1)
+    while not is_trading_day(previous):
+        previous -= timedelta(days=1)
+    return previous.isoformat()
 
 
 def enrich_daily_rankings(
