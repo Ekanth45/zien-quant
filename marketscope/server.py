@@ -24,7 +24,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+, Tuple
 logger = logging.getLogger("marketscope")
 
 # Ensure package import resolution
@@ -663,7 +663,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             if session_date:
                 candles = archive.get_candles_for_session(symbol, tf, session_date)
             if not candles:
-                candles = archive.get_latest_candles(symbol, tf, limit=100)
+                candles = archive.get_candles_for_session(symbol, tf, archive.get_latest_session_date()) if archive.get_latest_session_date() else []
         if not candles:
             self._send_json(
                 {"error": f"Candle data unavailable for symbol {symbol}."},
