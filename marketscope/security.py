@@ -267,7 +267,10 @@ class DatabaseManager:
         finally:
             conn.close()
 
-    def create_authenticated_session(self, user_id: int, mfa_step: Optional[int] = None) -> Optional[Tuple[str, str]]:
+    def create_authenticated_session(
+        self, user_id: int, mfa_step: Optional[int] = None,
+        expected_credentials: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Tuple[str, str]]:
         """Atomically consume an authenticator step and issue its session."""
         raw_token, csrf_token = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
         now = datetime.now(timezone.utc)
@@ -275,9 +278,14 @@ class DatabaseManager:
         try:
             with conn:
                 conn.execute("BEGIN IMMEDIATE")
-                row = conn.execute("SELECT disabled,totp_secret,totp_last_step FROM users WHERE id = ?", (user_id,)).fetchone()
+                row = conn.execute("SELECT disabled,password_hash,totp_secret,totp_last_step FROM users WHERE id = ?", (user_id,)).fetchone()
                 if not row or row["disabled"]:
                     return None
+                if expected_credentials is not None:
+                    for key in ("password_hash", "totp_secret"):
+                        current, expected = row[key] or "", expected_credentials.get(key) or ""
+                        if not hmac.compare_digest(current, expected):
+                            return None
                 if row["totp_secret"]:
                     if mfa_step is None or mfa_step <= (row["totp_last_step"] or 0):
                         return None

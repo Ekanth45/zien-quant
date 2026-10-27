@@ -17,10 +17,12 @@ function response(body, status = 200) {
   return { ok: status < 400, status, json: async () => structuredClone(body) };
 }
 
-async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS', trajectoryGap = false, dailyRanking = null } = {}) {
+async function workspace({ offline = false, candlesUnavailable = false, sessionState = 'PREVIOUS', trajectoryGap = false, dailyRanking = null, ownerExists=false, loginMfa=false, missingChange=false } = {}) {
   const { window, document } = parseHTML(html);
   const requests = [];
   const storage = new Map();
+  let signedIn=false;
+  window.HTMLElement.prototype.focus=()=>{};
   const buttons = document.querySelectorAll('button');
   for (const element of [document.getElementById('modal'), ...buttons]) {
     element.focus = () => {};
@@ -61,11 +63,19 @@ async function workspace({ offline = false, candlesUnavailable = false, sessionS
       ai_decision: { action: index ? 'BREAKDOWN SHORT' : 'BREAKOUT LONG', signal_type: index ? 'SELL' : 'BUY', entry_low: price, entry_high: price, stop_loss: price * (index ? 1.01 : .99), target_1: price * (index ? .98 : 1.02), target_2: price * (index ? .97 : 1.03), risk_reward_ratio: 2, grade: 'A', rationale: 'TEST FIXTURE research plan.' },
     }];
   }));
+  if(missingChange)rawStocks.RELIANCE.change_pct=null;
   const fetch = async (path, options = {}) => {
     requests.push({ path, options });
     const url = new URL(path, 'http://workspace.test');
     switch (url.pathname) {
-      case '/api/bootstrap': return response({ config: { monitored_symbols: symbols, default_timeframe: 5, score_threshold: 65 }, catalogue: Object.fromEntries(symbols.map(s => [s, { name: rawStocks[s].name }])), session: { authenticated: false }, has_owner: false });
+      case '/api/bootstrap': return response({ config: { monitored_symbols: symbols, default_timeframe: 5, score_threshold: 65 }, catalogue: Object.fromEntries(symbols.map(s => [s, { name: rawStocks[s].name }])), session: { authenticated: signedIn, email:signedIn?'owner@example.test':null, role:signedIn?'owner':null, csrf_token:signedIn?'test-csrf-token':null }, has_owner: ownerExists });
+      case '/api/login': {
+        const body=JSON.parse(options.body);
+        if(loginMfa&&!body.totp_code)return response({error:'mfa_required',detail:'Enter authenticator code',requires_mfa:true},400);
+        if(loginMfa&&body.totp_code!=='123456')return response({error:'invalid_mfa',detail:'Invalid test code',requires_mfa:true},401);
+        signedIn=true;return response({success:true,csrf_token:'test-csrf-token'});
+      }
+      case '/api/logout': signedIn=false;return response({success:true});
       case '/api/market': return offline ? response({ error: 'feed_unavailable', detail: 'The received feed is offline.' }, 503) : response({ mode: 'live', data_mode: sessionState === 'LIVE' ? 'LIVE' : 'PREVIOUS_SESSION', session_state: sessionState, session_date: fixture.session_date, timeframe: Number(url.searchParams.get('timeframe')), stocks: rawStocks, daily_ranking: dailyRanking, trajectories: [{ symbol: 'RELIANCE', points: trajectoryGap ? [0, .3, null, 1.4] : [0, .3, .7, 1.4] }, { symbol: 'TCS', points: [0, -.2, -.7, -1.2] }] });
       case '/api/market/schedule': return response({ state: 'CLOSED', action: 'opens', target_timestamp: 1792986300, target_time_ist: '2026-10-26 09:15 IST' });
       case '/api/stocks/database': return response({ total_database: 2, total_matches: 2, stocks: symbols.map(s => ({ symbol: s, name: rawStocks[s].name, exchange: 'NSE' })) });
@@ -200,4 +210,54 @@ test('missing or mismatched daily rankings cannot display forced winners', async
     assert.equal(panel.querySelectorAll('[data-daily-stock]').length,0);
     assert.match(panel.textContent,/Ranking unavailable/);
   }
+});
+
+test('password-only sign-in never demands an authenticator and logout clears the session', async()=>{
+  const {document,ui,requests}=await workspace({ownerExists:true});
+  document.getElementById('account').onclick();
+  const form=document.getElementById('loginForm');
+  form.querySelector('[name=email]').value='owner@example.test';
+  form.querySelector('[name=password]').value='test-only-password';
+  assert.equal(form.querySelector('[name=totp_code]').disabled,true);
+  await form.onsubmit({preventDefault(){}});
+  assert.equal(ui.state.user.role,'owner');
+  assert.equal(ui.state.csrf,'test-csrf-token');
+  assert.equal(JSON.parse(requests.find(r=>r.path==='/api/login').options.body).totp_code,'');
+  document.getElementById('account').onclick();
+  await document.getElementById('signout').onclick();
+  assert.equal(ui.state.user,null);
+  assert.equal(ui.state.csrf,null);
+});
+
+test('MFA is requested only after credentials, recovery is visible and fresh-code retry works', async()=>{
+  const {document,ui}=await workspace({ownerExists:true,loginMfa:true});
+  document.getElementById('account').onclick();
+  const form=document.getElementById('loginForm'),code=form.querySelector('[name=totp_code]');
+  form.querySelector('[name=email]').value='owner@example.test';
+  form.querySelector('[name=password]').value='test-only-password';
+  await form.onsubmit({preventDefault(){}});
+  assert.equal(ui.state.user,null);
+  assert.equal(document.getElementById('mfaStep').hidden,false);
+  assert.equal(code.required,true);
+  document.getElementById('accountRecovery').onclick();
+  assert.equal(document.getElementById('recoveryHelp').hidden,false);
+  assert.match(document.getElementById('recoveryHelp').textContent,/python manage.py reset-mfa/);
+  code.value='000000';await form.onsubmit({preventDefault(){}});
+  assert.equal(ui.state.user,null);
+  assert.equal(code.value,'');
+  assert.match(document.getElementById('loginError').textContent,/Invalid test code/);
+  code.value='123456';await form.onsubmit({preventDefault(){}});
+  assert.equal(ui.state.user.role,'owner');
+  assert.equal(form.querySelector('[name=password]').value,'');
+});
+
+test('scanner sorts unknown percentage changes last and sector averages keep them unavailable',async()=>{
+ const {document,ui}=await workspace({missingChange:true});
+ const energy=document.querySelector('[data-sector="Energy"]');
+ assert.match(energy.textContent,/0 of 1 with prior-close change/);
+ assert.ok(!energy.textContent.includes('0.00%'));
+ ui.navigate('scanner');
+ document.getElementById('sortFilter').onchange({target:{value:'change'}});
+ assert.equal(document.querySelector('[data-card]').dataset.card,'TCS');
+ assert.match(document.querySelector('[data-card="RELIANCE"]').textContent,/—/);
 });
