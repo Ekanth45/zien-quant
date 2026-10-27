@@ -23,8 +23,9 @@ from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+
 logger = logging.getLogger("marketscope")
 
 # Ensure package import resolution
