@@ -403,7 +403,10 @@ class RealTimeScraperFeed:
 
                     # Archive real closed candles to candles.db (never stale)
                     try:
-                        from marketscope.candle_archive import get_candle_archive
+                        try:
+                            from marketscope.candle_archive import get_candle_archive
+                        except ImportError:
+                            from candle_archive import get_candle_archive
                         get_candle_archive().archive_closed_candles(
                             clean_symbol, timeframe, candles, source="exchange"
                         )

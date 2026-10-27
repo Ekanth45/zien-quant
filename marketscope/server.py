@@ -12,6 +12,7 @@ import json
 import gzip
 import hmac
 import logging
+import math
 import mimetypes
 import os
 import re
@@ -37,6 +38,7 @@ except (OSError, ValueError, KeyError):
 
 # Ensure package import resolution
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from env_loader import load_dotenv
 load_dotenv()
@@ -103,6 +105,31 @@ rate_limiter_export = RateLimiter(limit=5, window_sec=60)
 rate_limiter_login = RateLimiter(limit=12, window_sec=60)
 rate_limiter_history = RateLimiter(limit=8, window_sec=60)
 server_start_time = time.time()
+
+
+def normalize_config_numbers(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep persisted numerical settings finite and of their declared type."""
+    normalized = dict(config)
+    for key, value in config.items():
+        default = DEFAULT_CONFIG.get(key)
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"{key} must be finite")
+        if isinstance(default, bool) or not isinstance(default, (int, float)):
+            continue
+        if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+            raise ValueError(f"{key} must be a number")
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError(f"{key} must be finite")
+        if key in ("norm_trend", "norm_momentum", "norm_vwap", "norm_rsi") and number <= 0:
+            raise ValueError(f"{key} must be greater than zero")
+        if isinstance(default, int):
+            if not number.is_integer():
+                raise ValueError(f"{key} must be a whole number")
+            normalized[key] = int(number)
+        else:
+            normalized[key] = number
+    return normalized
 
 
 class MarketScopeHandler(BaseHTTPRequestHandler):
@@ -455,6 +482,10 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             tf = int(query.get("timeframe", ["5"])[0])
         except ValueError:
             tf = 5
+
+        if tf not in (1, 5, 15, 60):
+            self._send_json({"error": "invalid_timeframe", "detail": "Choose 1, 5, 15 or 60 minute candles."}, status=400)
+            return
 
         cfg = self.db.get_latest_config() or DEFAULT_CONFIG
         state_info = get_session_state(candle_archive=get_candle_archive(), db_manager=self.db)
@@ -1275,7 +1306,10 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "invalid_mfa", "detail": "The authenticator code is invalid, expired or already used. Try a fresh code.", "requires_mfa": True}, status=401)
                 return
 
-        issued = self.db.create_authenticated_session(user["id"], new_step)
+        issued = self.db.create_authenticated_session(
+            user["id"], new_step,
+            expected_credentials={"password_hash": user["password_hash"], "totp_secret": user["totp_secret"]},
+        )
         if not issued:
             self._send_json({"error": "login_state_changed", "detail": "Account or authenticator state changed. Try a fresh sign-in.", "requires_mfa": bool(user["totp_secret"])}, status=401)
             return
@@ -1371,6 +1405,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
         merged.update(body)
 
         try:
+            merged = normalize_config_numbers(merged)
             fast = int(merged.get("fast_ema_period", 9))
             slow = int(merged.get("slow_ema_period", 21))
             if fast <= 0 or slow <= 0 or fast >= slow:
@@ -1433,7 +1468,7 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             if min_rr < 1.0 or min_rr > 10.0:
                 self._send_json({"error": "Minimum R:R hurdle must be between 1.0 and 10.0"}, status=400)
                 return
-        except (ValueError, TypeError) as err:
+        except (ValueError, TypeError, OverflowError) as err:
             self._send_json({"error": f"Invalid configuration parameter format: {err}"}, status=400)
             return
 
@@ -1449,14 +1484,25 @@ class MarketScopeHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Empty body"}, status=400)
             return
 
-        raw_render = body.get("render_ms", 0.0)
+        try:
+            raw_render = body.get("render_ms", 0.0)
+            raw_latency = body.get("feed_latency_ms", 0.0)
+            if any(isinstance(value, bool) or not isinstance(value, (int, float, str))
+                   for value in (raw_render, raw_latency)):
+                raise ValueError("Metric durations must be numbers")
+            raw_render, raw_latency = float(raw_render), float(raw_latency)
+            if any(not math.isfinite(value) or value < 0 for value in (raw_render, raw_latency)):
+                raise ValueError("Metric durations must be finite non-negative numbers")
+        except (ValueError, TypeError, OverflowError) as error:
+            self._send_json({"error": "invalid_metrics", "detail": str(error)}, status=400)
+            return
         # If timestamp is passed (e.g. > 1e11 ms), calculate delta or normalize
         if raw_render > 1_000_000_000_000:
-            render_duration = max(0.0, time.time() * 1000 - raw_render)
+            render_duration = min(60_000.0, max(0.0, time.time() * 1000 - raw_render))
         else:
             render_duration = min(float(raw_render), 60_000.0)
 
-        latency_ms = min(float(body.get("feed_latency_ms", 0.0)), 60_000.0)
+        latency_ms = min(raw_latency, 60_000.0)
         client_ts = body.get("client_timestamp")
 
         try:
